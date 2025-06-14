@@ -7,20 +7,20 @@
       "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\Scheduler.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:Scheduler.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\Process.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:Process.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\Console.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:Console.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\console.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:console.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\Console.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:Console.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\Scheduler.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:Scheduler.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\Process.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:Process.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     }
   ],
   "DocumentGroupContainers": [
@@ -34,7 +34,7 @@
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 3,
               "Title": "Scheduler.h",
               "DocumentMoniker": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\Scheduler.h",
               "RelativeDocumentMoniker": "Scheduler.h",
@@ -42,12 +42,11 @@
               "RelativeToolTip": "Scheduler.h",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAEMAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2025-06-14T06:59:47.674Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-06-14T06:59:47.674Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 4,
               "Title": "Process.h",
               "DocumentMoniker": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\Process.h",
               "RelativeDocumentMoniker": "Process.h",
@@ -55,8 +54,7 @@
               "RelativeToolTip": "Process.h",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2025-06-14T06:59:21.78Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-06-14T06:59:21.78Z"
             },
             {
               "$type": "Document",
@@ -66,33 +64,33 @@
               "RelativeDocumentMoniker": "main.cpp",
               "ToolTip": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\main.cpp",
               "RelativeToolTip": "main.cpp",
-              "ViewState": "AgIAACcAAAAAAAAAAAAAADQAAAA3AAAAAAAAAA==",
+              "ViewState": "AgIAAJYAAAAAAAAAAADwv7EAAAARAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2025-05-16T15:25:35.335Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 1,
               "Title": "Console.cpp",
               "DocumentMoniker": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\Console.cpp",
               "RelativeDocumentMoniker": "Console.cpp",
               "ToolTip": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\Console.cpp",
               "RelativeToolTip": "Console.cpp",
-              "ViewState": "AgIAAA8AAAAAAAAAAAAAAAsAAAAVAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACAAAAAnAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2025-05-26T12:20:58.618Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 2,
               "Title": "Console.h",
               "DocumentMoniker": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\Console.h",
               "RelativeDocumentMoniker": "Console.h",
               "ToolTip": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\Console.h",
               "RelativeToolTip": "Console.h",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABUAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
               "WhenOpened": "2025-05-26T12:19:09.188Z",
               "EditorCaption": ""

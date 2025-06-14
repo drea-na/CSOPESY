@@ -16,7 +16,7 @@ public:
 
     void displayScreen();
 
-private:
+public:
     string getCurrentTimestamp();
 };
 
