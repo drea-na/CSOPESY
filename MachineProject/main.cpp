@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <map>
 #include "Console.h"
+#include "Scheduler.h"
 
 using namespace std;
 
@@ -49,9 +50,21 @@ int main() {
             system("cls");
             printHeader();
         }
-        else if (str == "initialize" || str == "screen" || str == "scheduler-test" ||
+        else if (str == "initialize" || str == "screen" ||
             str == "scheduler-stop" || str == "report-util") {
             cout << str << " command recognized. Doing something." << endl;
+            printEnter();
+        }
+        else if (str == "scheduler-test") {
+            static Scheduler scheduler;
+
+            for (int i = 0; i < 10; ++i) {
+                string name = "screen_" + to_string(i + 1);
+                Process* p = new Process(name);
+                scheduler.addProcess(p);
+            }
+
+            cout << "10 processes with 100 print commands each were added to the scheduler.\n";
             printEnter();
         }
         else if (str.substr(0, 10) == "screen -s ") {
