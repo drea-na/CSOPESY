@@ -1,0 +1,3 @@
+num-cpu 4
+scheduler rr
+quantum-cycles 5 

@@ -39,6 +39,40 @@ struct ProcessInfo {
 vector<ProcessInfo> processList;
 mutex processMutex;
 
+// Scheduler globals
+Scheduler* scheduler = nullptr;
+int global_core_count = 4;
+int global_quantum = 2;
+SchedulingAlgorithm global_algo = SchedulingAlgorithm::FCFS;
+
+// Read config.txt
+void readConfig() {
+    ifstream fin("config.txt");
+    if (!fin) {
+        cout << "config.txt not found. Using defaults." << endl;
+        return;
+    }
+    string key;
+    while (fin >> key) {
+        if (key == "num-cpu") fin >> global_core_count;
+        else if (key == "scheduler") {
+            string val; fin >> val;
+            if (val == "fcfs") global_algo = SchedulingAlgorithm::FCFS;
+            else if (val == "rr") global_algo = SchedulingAlgorithm::RR;
+        }
+        else if (key == "quantum-cycles") fin >> global_quantum;
+        // Add more config as needed
+        else fin.ignore(1000, '\n');
+    }
+}
+
+void generateDummyProcess(const string& name) {
+    // Place process logs in process_logs/
+    system("mkdir process_logs >nul 2>&1"); // Windows: suppress output if exists
+    Process* p = new Process("process_logs/" + name, true);
+    scheduler->addProcess(p);
+}
+
 void printHeader() {
     cout << C << " _______  _______  _______  _______  _______  _______  __   __ " << Default << endl;
     cout << C << "|       ||       ||       ||       ||       ||       ||  | |  |" << Default << endl;
@@ -122,7 +156,6 @@ void cpuWorker(int coreID) {
     }
 }
 
-
 int main() {
     bool running = true;
     string str;
@@ -134,54 +167,34 @@ int main() {
 
         if (str == "exit") {
             cout << "Shutting down... bye bye" << endl;
-            schedulerRunning = false;
-            cv.notify_all();
+            if (scheduler) delete scheduler;
+            scheduler = nullptr;
             running = false;
         }
-
         else if (str == "clear") {
             system("cls");
             printHeader();
         }
-        else if (str == "initialize" || str == "screen" ||
-            str == "scheduler-stop" || str == "report-util") {
-            cout << str << " command recognized. Doing something." << endl;
+        else if (str == "initialize") {
+            readConfig();
+            if (scheduler) delete scheduler;
+            scheduler = new Scheduler(global_core_count, global_algo, global_quantum);
+            cout << "Scheduler initialized: ";
+            cout << (global_algo == SchedulingAlgorithm::FCFS ? "FCFS" : "RR");
+            cout << ", cores: " << global_core_count << ", quantum: " << global_quantum << endl;
             printEnter();
         }
         else if (str == "scheduler-test") {
-            {
-                lock_guard<mutex> lock(queueMutex);
-                for (int i = 0; i < 10; ++i) {
-                    string pname = "process0" + to_string(i + 1);
-                    Console proc(pname);
-                    readyQueue.push(proc);
-
-                    ProcessInfo info;
-                    info.name = pname;
-                    info.startTime = proc.getCurrentTimestamp(); // make sure it's public
-                    info.coreID = -1;
-                    info.progress = 0;
-                    info.total = 100;
-                    info.finished = false;
-
-                    lock_guard<mutex> lock2(processMutex);
-                    processList.push_back(info);
-                }
+            if (!scheduler) {
+                cout << "Run 'initialize' first!" << endl;
+                printEnter();
+                continue;
             }
-
-            cv.notify_all();
-
-            thread schedulerThread([] {
-                vector<thread> cores;
-                for (int i = 0; i < 4; ++i) {
-                    cores.emplace_back(cpuWorker, i);
-                }
-                for (auto& t : cores) t.join();
-                });
-
-            schedulerThread.detach(); // runs independently
-
-            cout << "Started scheduler with 10 processes.\n";
+            for (int i = 0; i < 10; ++i) {
+                string pname = std::string("process") + (i < 9 ? "0" : "") + std::to_string(i + 1);
+                generateDummyProcess(pname);
+            }
+            cout << "Started scheduler with 10 dummy processes (see process_logs/)." << endl;
             printEnter();
         }
         else if (str == "screen -ls") {

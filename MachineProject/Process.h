@@ -19,6 +19,11 @@ public:
         logFile.open(name + ".txt", std::ios::out);
     }
 
+    // New constructor for custom log path
+    Process(const std::string& logPath, bool isPath) : name(logPath) {
+        logFile.open(logPath + ".txt", std::ios::out);
+    }
+
     ~Process() {
         if (logFile.is_open())
             logFile.close();
