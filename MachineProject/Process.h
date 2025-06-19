@@ -7,6 +7,7 @@
 #include <chrono>
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 class Process {
 public:
@@ -37,7 +38,9 @@ public:
         std::stringstream ss;
         ss << "(" << std::put_time(&tm_time, "%m/%d/%Y %I:%M:%S%p")
             << ") Core:" << coreId << " \"Hello world from " << name << "!\"";
-        logFile << ss.str() << std::endl;
+        std::string logLine = ss.str();
+        logFile << logLine << std::endl;
+        std::cout << logLine << std::endl;
     }
 };
 
