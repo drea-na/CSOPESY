@@ -2,11 +2,10 @@
 #include "Console.h"
 #include <iostream>
 #include <ctime>
-#include <iomanip>
 #include <sstream>
 
 
-Console::Console(string screenName) {
+Console::Console(std::string screenName) {
     name = screenName;
     currentLine = 1;
     totalLines = 100;
@@ -17,18 +16,19 @@ Console::Console(string screenName) {
 Console::Console() : name("Default"), currentLine(0), totalLines(0), timestamp(getCurrentTimestamp()) {}
 
 void Console::displayScreen() {
-    cout << "\n=== Screen for Process: " << name << " ===" << endl;
-    cout << "Instruction: " << currentLine << " / " << totalLines << endl;
-    cout << "Started at: " << timestamp << endl;
-    cout << "(Type 'exit' to return to the main menu)\n";
+    std::cout << "\n=== Screen for Process: " << name << " ===" << std::endl;
+    std::cout << "Instruction: " << currentLine << " / " << totalLines << std::endl;
+    std::cout << "Started at: " << timestamp << std::endl;
+    std::cout << "(Type 'exit' to return to the main menu)\n";
+    //std::cout << "Enter command: ";
 }
 
 // Helper function to get the current timestamp
-string Console::getCurrentTimestamp() {
+std::string Console::getCurrentTimestamp() {
     time_t now = time(0);
     tm localTime;
     localtime_s(&localTime, &now); // Use localtime_s for safer local time conversion
-    stringstream ss;
+    std::stringstream ss;
     ss << (localTime.tm_year + 1900) << "-"
        << (localTime.tm_mon + 1) << "-"
        << localTime.tm_mday << " "

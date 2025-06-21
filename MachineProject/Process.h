@@ -3,11 +3,19 @@
 
 #include <string>
 #include <fstream>
-#include <mutex>
 #include <chrono>
 #include <iomanip>
 #include <sstream>
 #include <iostream>
+
+struct ProcessInfo {
+    std::string name;
+    std::string startTime;
+    int coreID;
+    int progress;
+    int total;
+    bool finished;
+};
 
 class Process {
 public:

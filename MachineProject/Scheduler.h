@@ -8,7 +8,6 @@
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
-#include <string>
 #include "Process.h"
 
 // Scheduling algorithms
@@ -28,6 +27,9 @@ private:
     int quantumCycles; // For RR
     SchedulingAlgorithm algorithm;
     std::vector<std::thread> workerThreads;
+
+    std::vector<ProcessInfo> runningProcesses;
+    std::mutex processListMutex;
 
 public:
     Scheduler(int coreCount_, SchedulingAlgorithm algo, int quantum = 1)
@@ -91,6 +93,11 @@ public:
             }
             delete p;
         }
+    }
+
+    std::vector<ProcessInfo> getProcessList() {
+        std::lock_guard<std::mutex> lock(processListMutex);
+        return runningProcesses;
     }
 };
 

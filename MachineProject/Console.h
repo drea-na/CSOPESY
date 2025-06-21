@@ -2,22 +2,46 @@
 #define CONSOLE_H
 
 #include <string>
-using namespace std;
 
 class Console {
-public:
-    string name;
+private:
+    std::string name;
     int currentLine;
     int totalLines;
-    string timestamp;
-
-    Console(); // Default constructor
-    Console(string screenName);
-
-    void displayScreen();
+    std::string timestamp;
 
 public:
-    string getCurrentTimestamp();
+    Console(); // Default constructor
+    Console(std::string screenName);
+
+    void displayScreen();
+    std::string getCurrentTimestamp();
+
+    //Getter functions
+    std::string getName() const {
+		return name;
+    }
+
+    int getCurrentLine() const {
+		return currentLine;
+    }
+
+	int getTotalLines() const {
+        return totalLines;
+    }
+    std::string getTimestamp() const {
+        return timestamp;
+    }
+
+    //Setter functions
+    void setCurrentLine(int line) {
+        currentLine = line;
+    }
+
+    void setTotalLines(int total) {
+        totalLines = total;
+    }
+
 };
 
 #endif
