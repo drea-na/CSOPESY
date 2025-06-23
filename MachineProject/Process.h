@@ -48,7 +48,7 @@ public:
             << ") Core:" << coreId << " \"Hello world from " << name << "!\"";
         std::string logLine = ss.str();
         logFile << logLine << std::endl;
-        std::cout << logLine << std::endl;
+        //std::cout << logLine << std::endl;
     }
 };
 

@@ -18,9 +18,7 @@ std::map<std::string, Console> screenMap;
 std::queue<Console> readyQueue;
 std::mutex queueMutex;
 std::condition_variable cv;
-bool schedulerRunning = true;
-
-
+bool schedulerRunning = false;
 
 // global variables
 std::vector<ProcessInfo> processList;
@@ -31,6 +29,17 @@ Scheduler* scheduler = nullptr;
 int global_core_count = 4;
 int global_quantum = 2;
 SchedulingAlgorithm global_algo = SchedulingAlgorithm::FCFS;
+int global_batch_process_freq = 1;
+int global_min_ins = 1000;
+int global_max_ins = 2000;
+int global_delay_per_exec = 0;
+
+std::atomic<int> coresUsed(0);
+std::atomic<int> totalCpuCycles(0);
+std::atomic<int> activeCpuCycles(0);
+
+std::thread processGeneratorThread;
+std::atomic<bool> generatorRunning(false);
 
 // Read config.txt
 void readConfig() {
@@ -48,6 +57,10 @@ void readConfig() {
             else if (val == "rr") global_algo = SchedulingAlgorithm::RR;
         }
         else if (key == "quantum-cycles") fin >> global_quantum;
+        else if (key == "batch-process-freq") fin >> global_batch_process_freq;
+        else if (key == "min-ins") fin >> global_min_ins;
+        else if (key == "max-ins") fin >> global_max_ins;
+        else if (key == "delay-per-exec") fin >> global_delay_per_exec;
         // Add more config as needed
         else fin.ignore(1000, '\n');
     }
@@ -81,9 +94,17 @@ void generateDummyProcess(const std::string& name) {
 void showProcessList() {
     std::lock_guard<std::mutex> lock(processMutex);
 
-    std::cout << "CPU utilization: " << std::endl;
-    std::cout << "Cores used: " << std::endl;
-    std::cout << "Cores available: " << std::endl;
+    double utilization = 0.0;
+    if (totalCpuCycles > 0) {
+        utilization = (double)activeCpuCycles / totalCpuCycles * 100.0;
+    }
+
+    int used = coresUsed.load();
+    int available = global_core_count - used;
+
+    std::cout << "CPU utilization: " << std::fixed << std::setprecision(2) << utilization << "%" << std::endl;
+    std::cout << "Cores used: " << used << std::endl;
+    std::cout << "Cores available: " << available << std::endl;
 
     std::cout << "\n-------------------------------" << std::endl;
     std::cout << "Running processes:\n";

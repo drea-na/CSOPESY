@@ -22,6 +22,12 @@ extern std::queue<Console> readyQueue;
 extern std::mutex queueMutex;
 extern std::condition_variable cv;
 extern bool schedulerRunning;
+extern std::atomic<bool> generatorRunning;
+extern std::thread processGeneratorThread;
+extern int global_batch_process_freq;
+extern std::atomic<int> coresUsed;
+extern std::atomic<int> totalCpuCycles;
+extern std::atomic<int> activeCpuCycles;
 
 //external declarations
 extern void readConfig();
@@ -85,11 +91,26 @@ void CommandHandler::schedulerStart() {
         printEnter();
     }
 
+	schedulerRunning = true;
+
     for (int i = 1; i <= 10; ++i) {
         generateDummyProcess("process" + std::to_string(i));
     }
 
-    std::cout << "Started scheduler with 10 dummy processes (see process_logs/)." << std::endl;
+    if (!generatorRunning) {
+        generatorRunning = true;
+        processGeneratorThread = std::thread ([this]() {
+			int processCount = 1;
+            while (generatorRunning && schedulerRunning) {
+                generateDummyProcess("process" + std::to_string(processCount));
+				processCount++;
+
+                std::this_thread::sleep_for(std::chrono::seconds(global_batch_process_freq));
+            }
+        });
+    }
+
+    std::cout << "Scheduler started. Processes will be generated every " << global_batch_process_freq << " seconds." << std::endl;
     printEnter();
 }
 
@@ -101,7 +122,12 @@ void CommandHandler::schedulerStop() {
     }
 
     schedulerRunning = false;
+	generatorRunning = false;
     cv.notify_all();
+
+    if (processGeneratorThread.joinable()) {
+        processGeneratorThread.join();
+    }
 
     delete scheduler;
     scheduler = nullptr;
@@ -183,6 +209,14 @@ void CommandHandler::screenR(const std::string& name) {
 }
 
 void CommandHandler::reportUtil() {
+    double utilization = 0.0;
+    if (totalCpuCycles > 0) {
+        utilization = (double)activeCpuCycles / totalCpuCycles * 100.0;
+    }
+
+    int used = coresUsed.load();
+    int available = global_core_count - used;
+
     std::string filename = "csopesy-log.txt";
     std::ofstream reportFile(filename);
 
@@ -194,9 +228,9 @@ void CommandHandler::reportUtil() {
 
     auto now = Console().getCurrentTimestamp();
 
-    reportFile << "CPU utilization: " << std::endl;
-    reportFile << "Cores used: " << std::endl;
-    reportFile << "Cores available: " << std::endl;
+    reportFile << "CPU utilization: " << std::fixed << std::setprecision(2) << utilization << "%" << std::endl;
+    reportFile << "Cores used: " << used << std::endl;
+    reportFile << "Cores available: " << available << std::endl;
 
     {
         std::lock_guard<std::mutex> lock(processMutex);

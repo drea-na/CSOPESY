@@ -10,6 +10,12 @@
 #include <condition_variable>
 #include "Process.h"
 
+extern std::atomic<int> coresUsed;
+extern std::atomic<int> totalCpuCycles;
+extern std::atomic<int> activeCpuCycles;
+extern std::vector<ProcessInfo> processList;
+extern std::mutex processMutex;
+
 // Scheduling algorithms
 enum class SchedulingAlgorithm {
     FCFS,
@@ -28,8 +34,6 @@ private:
     SchedulingAlgorithm algorithm;
     std::vector<std::thread> workerThreads;
 
-    std::vector<ProcessInfo> runningProcesses;
-    std::mutex processListMutex;
 
 public:
     Scheduler(int coreCount_, SchedulingAlgorithm algo, int quantum = 1)
@@ -59,7 +63,11 @@ public:
             {
                 std::unique_lock<std::mutex> lock(queueMutex);
                 cv.wait(lock, [&]() { return !processQueue.empty() || stopFlag; });
-                if (stopFlag || processQueue.empty()) continue;
+                if (stopFlag || processQueue.empty()) { 
+					totalCpuCycles ++;
+                    continue; 
+                }
+				// Pop process based on scheduling algorithm
                 if (algorithm == SchedulingAlgorithm::FCFS) {
                     p = processQueue.front();
                     processQueue.pop_front();
@@ -69,11 +77,31 @@ public:
                 }
             }
             if (!p) continue;
+
+            coresUsed++;
+
             if (algorithm == SchedulingAlgorithm::FCFS) {
                 while (p->executedCommands < p->totalCommands) {
                     std::this_thread::sleep_for(std::chrono::milliseconds(20));
                     p->logPrint(coreId);
                     ++p->executedCommands;
+
+                    totalCpuCycles++;
+                    activeCpuCycles++;
+
+                    {
+                        std::lock_guard<std::mutex> lock(processMutex);
+                        for (auto& info : processList) {
+                            if (info.name == p->name) {
+                                info.coreID = coreId;
+                                info.progress = p->executedCommands;
+                                if (p->executedCommands >= p->totalCommands) {
+                                    info.finished = true;
+                                }
+                                break;
+                            }
+                        }
+                    }
                 }
             } else if (algorithm == SchedulingAlgorithm::RR) {
                 int cycles = 0;
@@ -82,6 +110,23 @@ public:
                     p->logPrint(coreId);
                     ++p->executedCommands;
                     ++cycles;
+
+                    totalCpuCycles++;
+                    activeCpuCycles++;
+
+                    {
+                        std::lock_guard<std::mutex> lock(processMutex);
+                        for (auto& info : processList) {
+                            if (info.name == p->name) {
+                                info.coreID = coreId;
+                                info.progress = p->executedCommands;
+                                if (p->executedCommands >= p->totalCommands) {
+                                    info.finished = true;
+                                }
+                                break;
+                            }
+                        }
+                    }
                 }
                 // If not finished, requeue
                 if (p->executedCommands < p->totalCommands) {
@@ -91,13 +136,14 @@ public:
                     continue;
                 }
             }
+            coresUsed--;
             delete p;
         }
     }
 
     std::vector<ProcessInfo> getProcessList() {
-        std::lock_guard<std::mutex> lock(processListMutex);
-        return runningProcesses;
+        std::lock_guard<std::mutex> lock(processMutex);
+        return processList;
     }
 };
 
