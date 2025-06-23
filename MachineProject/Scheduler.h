@@ -83,44 +83,42 @@ public:
             if (algorithm == SchedulingAlgorithm::FCFS) {
                 while (p->executedCommands < p->totalCommands) {
                     std::this_thread::sleep_for(std::chrono::milliseconds(20));
-                    p->logPrint(coreId);
-                    ++p->executedCommands;
-
+                    int dummyTick = 0;
+                    bool running = p->executeNextInstruction(coreId, dummyTick);
                     totalCpuCycles++;
                     activeCpuCycles++;
-
                     {
                         std::lock_guard<std::mutex> lock(processMutex);
                         for (auto& info : processList) {
                             if (info.name == p->name) {
                                 info.coreID = coreId;
                                 info.progress = p->executedCommands;
-                                if (p->executedCommands >= p->totalCommands) {
+                                if (!running) {
                                     info.finished = true;
                                 }
                                 break;
                             }
                         }
                     }
+                    if (!running) break;
                 }
             } else if (algorithm == SchedulingAlgorithm::RR) {
                 int cycles = 0;
-                while (p->executedCommands < p->totalCommands && cycles < quantumCycles) {
+                bool running = true;
+                while (p->executedCommands < p->totalCommands && cycles < quantumCycles && running) {
                     std::this_thread::sleep_for(std::chrono::milliseconds(20));
-                    p->logPrint(coreId);
-                    ++p->executedCommands;
+                    int dummyTick = 0;
+                    running = p->executeNextInstruction(coreId, dummyTick);
                     ++cycles;
-
                     totalCpuCycles++;
                     activeCpuCycles++;
-
                     {
                         std::lock_guard<std::mutex> lock(processMutex);
                         for (auto& info : processList) {
                             if (info.name == p->name) {
                                 info.coreID = coreId;
                                 info.progress = p->executedCommands;
-                                if (p->executedCommands >= p->totalCommands) {
+                                if (!running) {
                                     info.finished = true;
                                 }
                                 break;
@@ -129,10 +127,11 @@ public:
                     }
                 }
                 // If not finished, requeue
-                if (p->executedCommands < p->totalCommands) {
+                if (p->executedCommands < p->totalCommands && running) {
                     std::lock_guard<std::mutex> lock(queueMutex);
                     processQueue.push_back(p);
                     cv.notify_one();
+                    coresUsed--;
                     continue;
                 }
             }

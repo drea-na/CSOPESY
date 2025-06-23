@@ -295,7 +295,7 @@ void CommandHandler::printHeader() {
     std::cout << Default << "Dy, Fatima Kriselle" << Default << std::endl;
     std::cout << Default << "Loria, Andrea Euceli" << Default << std::endl;
 
-    std::cout << Default << "\nLast Updated: " << Y << "06-21-2025" << Default << std::endl;
+    std::cout << Default << "\nLast Updated: " << Y << "06-23-2025" << Default << std::endl;
     
     std::cout << Default << "\n" << std::string(50, '-') << Default << std::endl;
     std::cout << Y << "Type 'exit' to quit, 'clear' to clear the screen" << Default << std::endl;

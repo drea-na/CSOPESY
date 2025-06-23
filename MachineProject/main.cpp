@@ -95,6 +95,7 @@ void generateDummyProcess(const std::string& name) {
     // Place process logs in process_logs/
     system("mkdir process_logs >nul 2>&1"); // Windows: suppress output if exists
     Process* p = new Process("process_logs/" + name, true);
+    p->generateRandomInstructions(global_min_ins, global_max_ins);
     if (scheduler) {
         scheduler->addProcess(p);
 
@@ -106,7 +107,7 @@ void generateDummyProcess(const std::string& name) {
             info.startTime = Console().getCurrentTimestamp();
             info.coreID = -1; // Not assigned to core yet
             info.progress = 0;
-            info.total = 100;
+            info.total = p->totalCommands;
             info.finished = false;
             processList.push_back(info);
         }
