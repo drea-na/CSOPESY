@@ -10,11 +10,14 @@ class CommandHandler {
 private:
     std::map<std::string, Console>& screenMap;
     Scheduler*& scheduler;
+    bool initialized = false; // Track if initialize has been called
 
 public:
     CommandHandler(std::map<std::string, Console>& screens, Scheduler*& sched)
-        : screenMap(screens), scheduler(sched) {
+        : screenMap(screens), scheduler(sched), initialized(false) {
     }
+
+    bool isInitialized() const { return initialized; }
 
     bool handleCommands(const std::string& command);
 

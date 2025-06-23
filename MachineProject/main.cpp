@@ -64,6 +64,31 @@ void readConfig() {
         // Add more config as needed
         else fin.ignore(1000, '\n');
     }
+    // Validation
+    if (global_core_count < 1 || global_core_count > 128) {
+        std::cout << "[config.txt] num-cpu out of range (1-128). Using default (4)." << std::endl;
+        global_core_count = 4;
+    }
+    if (global_quantum < 1) {
+        std::cout << "[config.txt] quantum-cycles out of range (>=1). Using default (2)." << std::endl;
+        global_quantum = 2;
+    }
+    if (global_batch_process_freq < 1) {
+        std::cout << "[config.txt] batch-process-freq out of range (>=1). Using default (1)." << std::endl;
+        global_batch_process_freq = 1;
+    }
+    if (global_min_ins < 1) {
+        std::cout << "[config.txt] min-ins out of range (>=1). Using default (1000)." << std::endl;
+        global_min_ins = 1000;
+    }
+    if (global_max_ins < global_min_ins) {
+        std::cout << "[config.txt] max-ins less than min-ins. Setting max-ins = min-ins." << std::endl;
+        global_max_ins = global_min_ins;
+    }
+    if (global_delay_per_exec < 0) {
+        std::cout << "[config.txt] delay-per-exec out of range (>=0). Using default (0)." << std::endl;
+        global_delay_per_exec = 0;
+    }
 }
 
 void generateDummyProcess(const std::string& name) {

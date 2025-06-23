@@ -35,6 +35,12 @@ extern void generateDummyProcess(const std::string& name);
 extern void showProcessList();
 
 bool CommandHandler::handleCommands(const std::string& command) {
+    // Only allow 'initialize' and 'exit' before initialization
+    if (!initialized && command != "initialize" && command != "exit" && command != "clear") {
+        std::cout << Y << "You must run 'initialize' before any other command!" << Default << std::endl;
+        printEnter();
+        return false;
+    }
     if (command == "clear") {
         system("cls");
         printHeader();
@@ -82,6 +88,7 @@ void CommandHandler::initialize() {
     std::cout << "Scheduler initialized: ";
     std::cout << (global_algo == SchedulingAlgorithm::FCFS ? "FCFS" : "RR");
     std::cout << ", cores: " << global_core_count << ", quantum: " << global_quantum << std::endl;
+    initialized = true;
     printEnter();
 }
 
