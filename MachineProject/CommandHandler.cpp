@@ -336,9 +336,9 @@ void CommandHandler::printHeader() {
     std::cout << Default << "\nLast Updated: " << Y << "06-27-2025" << Default << std::endl;
     std::cout << Default << "\n" << std::string(50, '-') << Default << std::endl;
     std::cout << Y << "Type 'exit' to quit, 'clear' to clear the screen" << Default << std::endl;
-    std::cout << "root:\> ";
+    std::cout << "root:\\> ";
 }
 
 void CommandHandler::printEnter() {
-    std::cout << "\nroot:\> ";
+    std::cout << "\nroot:\\> ";
 }
