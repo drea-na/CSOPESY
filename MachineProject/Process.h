@@ -14,6 +14,7 @@
 #include <functional>
 
 struct ProcessInfo {
+    int id;
     std::string name;
     std::string startTime;
     int coreID;
@@ -112,7 +113,7 @@ inline bool Process::executeNextInstruction(int coreId, int& cpuTick) {
                 std::string var = instr.args[0];
                 uint16_t val = 0;
                 if (variables.count(var)) val = variables[var];
-                msg = "Hello world from " + name + "! " + var + "=" + std::to_string(val);
+                msg += " " + var + "=" + std::to_string(val);
             }
             auto now = std::chrono::system_clock::now();
             auto time = std::chrono::system_clock::to_time_t(now);
@@ -120,7 +121,7 @@ inline bool Process::executeNextInstruction(int coreId, int& cpuTick) {
             localtime_s(&tm_time, &time);
             std::stringstream ss;
             ss << "(" << std::put_time(&tm_time, "%m/%d/%Y %I:%M:%S%p")
-                << ") Core:" << coreId << " " << msg;
+                << ") Core:" << coreId << " \"" << msg << "\"";
             logFile << ss.str() << std::endl;
             break;
         }

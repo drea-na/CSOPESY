@@ -41,6 +41,9 @@ std::atomic<int> activeCpuCycles(0);
 std::thread processGeneratorThread;
 std::atomic<bool> generatorRunning(false);
 
+// Add a global process ID counter
+int nextProcessId = 0;
+
 // Read config.txt
 void readConfig() {
     std::ifstream fin("config.txt");
@@ -94,15 +97,15 @@ void readConfig() {
 void generateDummyProcess(const std::string& name) {
     // Place process logs in process_logs/
     system("mkdir process_logs >nul 2>&1"); // Windows: suppress output if exists
-    Process* p = new Process("process_logs/" + name, true);
+    Process* p = new Process(name, true);
     p->generateRandomInstructions(global_min_ins, global_max_ins);
     if (scheduler) {
         scheduler->addProcess(p);
-
         // Add to process tracking list
         {
             std::lock_guard<std::mutex> lock(processMutex);
             ProcessInfo info;
+            info.id = nextProcessId++;
             info.name = name;
             info.startTime = Console().getCurrentTimestamp();
             info.coreID = -1; // Not assigned to core yet
@@ -111,8 +114,7 @@ void generateDummyProcess(const std::string& name) {
             info.finished = false;
             processList.push_back(info);
         }
-    }
-    else {
+    } else {
         delete p; // Clean up if no scheduler available
     }
 }
@@ -137,9 +139,13 @@ void showProcessList() {
 
     for (const auto& p : processList) {
         if (!p.finished) {
-            std::cout << p.name << "\t(" << p.startTime << ")"
-                << "  Core: " << p.coreID
-                << "  " << p.progress << " / " << p.total << std::endl;
+            std::cout << p.name << "\t(" << p.startTime << ")";
+            if (p.coreID == -1) {
+                std::cout << "  Core: N/A";
+            } else {
+                std::cout << "  Core: " << p.coreID;
+            }
+            std::cout << "  " << p.progress << " / " << p.total << std::endl;
         }
     }
 

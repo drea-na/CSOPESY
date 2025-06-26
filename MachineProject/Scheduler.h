@@ -28,6 +28,7 @@ private:
     std::mutex queueMutex;
     std::condition_variable cv;
     std::atomic<bool> stopFlag = false;
+    std::atomic<bool> started = false;
 
     int coreCount;
     int quantumCycles; // For RR
@@ -38,13 +39,22 @@ private:
 public:
     Scheduler(int coreCount_, SchedulingAlgorithm algo, int quantum = 1)
         : coreCount(coreCount_), algorithm(algo), quantumCycles(quantum) {
-        for (int i = 0; i < coreCount; ++i) {
-            workerThreads.emplace_back(&Scheduler::worker, this, i);
+        // Don't start worker threads immediately
+    }
+
+    void start() {
+        if (!started) {
+            started = true;
+            stopFlag = false;
+            for (int i = 0; i < coreCount; ++i) {
+                workerThreads.emplace_back(&Scheduler::worker, this, i);
+            }
         }
     }
 
     ~Scheduler() {
         stopFlag = true;
+        started = false;
         cv.notify_all();
         for (auto& t : workerThreads)
             if (t.joinable())
