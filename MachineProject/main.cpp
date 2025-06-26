@@ -201,22 +201,17 @@ int main() {
     int cpuCycles = 0;
 
     handler.printHeader();
-
     while (running) {
         std::getline(std::cin, command);
-
         if (command == "exit") {
             std::cout << "Shutting down... bye bye" << std::endl;
             if (scheduler) delete scheduler;
             running = false;
-        }
-        else {
+        } else {
             handler.handleCommands(command);
         }
-
         cpuCycles++;
     }
-
 
     return 0;
 }

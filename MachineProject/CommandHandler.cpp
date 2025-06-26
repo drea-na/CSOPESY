@@ -97,26 +97,25 @@ void CommandHandler::schedulerStart() {
         std::cout << "Run 'initialize' first!" << std::endl;
         printEnter();
     }
-
-	schedulerRunning = true;
-
+    schedulerRunning = true;
     for (int i = 1; i <= 10; ++i) {
-        generateDummyProcess("process" + std::to_string(i));
+        char buf[16];
+        snprintf(buf, sizeof(buf), "process%02d", i);
+        generateDummyProcess(buf);
     }
-
     if (!generatorRunning) {
         generatorRunning = true;
         processGeneratorThread = std::thread ([this]() {
-			int processCount = 1;
+            int processCount = 11;
             while (generatorRunning && schedulerRunning) {
-                generateDummyProcess("process" + std::to_string(processCount));
-				processCount++;
-
+                char buf[16];
+                snprintf(buf, sizeof(buf), "process%02d", processCount);
+                generateDummyProcess(buf);
+                processCount++;
                 std::this_thread::sleep_for(std::chrono::seconds(global_batch_process_freq));
             }
         });
     }
-
     std::cout << "Scheduler started. Processes will be generated every " << global_batch_process_freq << " seconds." << std::endl;
     printEnter();
 }
@@ -151,33 +150,56 @@ void CommandHandler::screenList() {
 void CommandHandler::screenS(const std::string& name) {
     if (name.empty()) {
         std::cout << "Error: screen name cannot be empty." << std::endl;
-    }
-    else {
+    } else {
         if (screenMap.count(name)) {
             std::cout << "Screen '" << name << "' already exists." << std::endl;
-        }
-        else {
+        } else {
             screenMap[name] = Console(name);
             std::cout << "Created screen: " << name << std::endl;
         }
         bool inScreen = true;
         system("cls");
-        screenMap[name].displayScreen();
+        // Display process info and logs
+        auto it = std::find_if(processList.begin(), processList.end(), [&](const ProcessInfo& p){ return p.name == name; });
+        if (it != processList.end()) {
+            std::cout << "\n=== Screen for Process: " << it->name << " ===" << std::endl;
+            std::cout << "Process ID: " << (it - processList.begin()) << std::endl;
+            std::cout << "Instruction: " << it->progress << " / " << it->total << std::endl;
+            std::cout << "Started at: " << it->startTime << std::endl;
+            // Show last 10 lines of log
+            std::ifstream logFile("process_logs/" + name + ".txt");
+            std::vector<std::string> lines;
+            std::string line;
+            while (std::getline(logFile, line)) lines.push_back(line);
+            std::cout << "--- Last 10 PRINT logs ---" << std::endl;
+            for (int i = std::max(0, (int)lines.size()-10); i < (int)lines.size(); ++i) {
+                std::cout << lines[i] << std::endl;
+            }
+        } else {
+            std::cout << "Process " << name << " not found" << std::endl;
+        }
         while (inScreen) {
-			printEnter();
+            printEnter();
             std::string input;
             std::getline(std::cin, input);
             if (input == "exit") {
                 inScreen = false;
                 system("cls");
                 printHeader();
-            }
-            else if (input == "process-smi") {
+            } else if (input == "process-smi") {
                 inScreen = true;
-                processSmi();
-            }
-            else {
-				std::cout << "Unknown command in screen '" << name << "'. Type 'exit' to leave the screen." << std::endl;
+                auto it = std::find_if(processList.begin(), processList.end(), [&](const ProcessInfo& p){ return p.name == name; });
+                if (it != processList.end()) {
+                    std::cout << "\nProcess name: " << it->name << std::endl;
+                    std::cout << "ID: " << (it - processList.begin()) << std::endl;
+                    std::cout << "Current instruction line: " << it->progress << std::endl;
+                    std::cout << "Lines of code: " << it->total << std::endl;
+                    if (it->finished) std::cout << "Finished!" << std::endl;
+                } else {
+                    std::cout << "Process " << name << " not found" << std::endl;
+                }
+            } else {
+                std::cout << "Unknown command in screen '" << name << "'. Type 'exit' to leave the screen." << std::endl;
             }
         }
     }
@@ -186,32 +208,51 @@ void CommandHandler::screenS(const std::string& name) {
 void CommandHandler::screenR(const std::string& name) {
     if (name.empty()) {
         std::cout << "Error: screen name cannot be empty." << std::endl;
-    }
-    else if (screenMap.count(name)) {
+    } else {
+        auto it = std::find_if(processList.begin(), processList.end(), [&](const ProcessInfo& p){ return p.name == name && !p.finished; });
+        if (it == processList.end()) {
+            std::cout << "Process " << name << " not found" << std::endl;
+            printEnter();
+            return;
+        }
         bool inScreen = true;
         system("cls");
-        screenMap[name].displayScreen();
+        std::cout << "\n=== Screen for Process: " << it->name << " ===" << std::endl;
+        std::cout << "Process ID: " << (it - processList.begin()) << std::endl;
+        std::cout << "Instruction: " << it->progress << " / " << it->total << std::endl;
+        std::cout << "Started at: " << it->startTime << std::endl;
+        // Show last 10 lines of log
+        std::ifstream logFile("process_logs/" + name + ".txt");
+        std::vector<std::string> lines;
+        std::string line;
+        while (std::getline(logFile, line)) lines.push_back(line);
+        std::cout << "--- Last 10 PRINT logs ---" << std::endl;
+        for (int i = std::max(0, (int)lines.size()-10); i < (int)lines.size(); ++i) {
+            std::cout << lines[i] << std::endl;
+        }
         while (inScreen) {
-			printEnter();
+            printEnter();
             std::string input;
             std::getline(std::cin, input);
             if (input == "exit") {
                 inScreen = false;
                 system("cls");
                 printHeader();
-            }
-            else if (input == "process-smi") {
+            } else if (input == "process-smi") {
                 inScreen = true;
-                processSmi();
-            }
-            else {
+                if (it != processList.end()) {
+                    std::cout << "\nProcess name: " << it->name << std::endl;
+                    std::cout << "ID: " << (it - processList.begin()) << std::endl;
+                    std::cout << "Current instruction line: " << it->progress << std::endl;
+                    std::cout << "Lines of code: " << it->total << std::endl;
+                    if (it->finished) std::cout << "Finished!" << std::endl;
+                } else {
+                    std::cout << "Process " << name << " not found" << std::endl;
+                }
+            } else {
                 std::cout << "Unknown command in screen '" << name << "'. Type 'exit' to leave the screen." << std::endl;
             }
         }
-    }
-    else {
-        std::cout << "No screen named '" << name << "' found." << std::endl;
-        printEnter();
     }
 }
 
@@ -285,23 +326,19 @@ void CommandHandler::printHeader() {
     std::cout << C << "|      _||_____  ||  |_|  ||    ___||    ___||_____  ||_     _|" << Default << std::endl;
     std::cout << C << "|     |_  _____| ||       ||   |    |   |___  _____| |  |   |  " << Default << std::endl;
     std::cout << C << "|_______||_______||_______||___|    |_______||_______|  |___|  " << Default << std::endl;
-
     std::cout << Default << "\n" << std::string(50, '-') << Default << std::endl;
     std::cout << G << "\nHello, Welcome to CSOPESY Emulator!" << Default << std::endl;
-    
     std::cout << Default << "Developers:" << Default << std::endl;
     std::cout << Default << "Chan, Kendrick Martin" << Default << std::endl;
     std::cout << Default << "Dionela, Valiant Lance" << Default << std::endl;
     std::cout << Default << "Dy, Fatima Kriselle" << Default << std::endl;
     std::cout << Default << "Loria, Andrea Euceli" << Default << std::endl;
-
-    std::cout << Default << "\nLast Updated: " << Y << "06-23-2025" << Default << std::endl;
-    
+    std::cout << Default << "\nLast Updated: " << Y << "06-27-2025" << Default << std::endl;
     std::cout << Default << "\n" << std::string(50, '-') << Default << std::endl;
     std::cout << Y << "Type 'exit' to quit, 'clear' to clear the screen" << Default << std::endl;
-    std::cout << "Enter a command: ";
+    std::cout << "root:\> ";
 }
 
 void CommandHandler::printEnter() {
-    std::cout << "\nEnter a command: ";
+    std::cout << "\nroot:\> ";
 }
