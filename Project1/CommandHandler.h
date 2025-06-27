@@ -25,8 +25,8 @@ public:
     static void showScreenList();
     static void showScreen(const std::string& name);
     static void resetScreen(const std::string& name);
-    static void reportUtilization();
-    static void showHelp();
+    static void showReportUtil();
+    static void showProcessSMI();
 
 private:
     static std::map<std::string, Screen>* screenMap;

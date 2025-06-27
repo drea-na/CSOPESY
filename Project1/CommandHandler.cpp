@@ -21,24 +21,31 @@ void CommandHandler::handle() {
     std::string input;
     while (true) {
         std::getline(std::cin, input);
+
         if (input == "exit") {
-            std::cout << "Exiting...\n";
+            std::cout << "Shutting Down...\n";
             break;
         }
-        else if (input == "clear") {
-#ifdef _WIN32
-            system("cls");
-#else
-            system("clear");
-#endif
-            drawHeader();
+
+        if (!initialized) {
+            if (input == "initialize") {
+                doInitialize();
+            } else {
+                std::cout << "[System not initialized. Type 'initialize' to start or 'exit' to quit.]\n";
+                prompt();
+            }
+        } else {
+            if (input == "clear") {
+                system("cls");
+                drawHeader();
+            } else {
+                executeCommand(input);
+            }
+            prompt();
         }
-        else {
-            executeCommand(input);
-        }
-        prompt();
     }
 }
+
 
 // === Console UI ===
 void CommandHandler::drawHeader() {
@@ -66,10 +73,10 @@ void CommandHandler::executeCommand(const std::string& command) {
     else if (!initialized) {
         std::cout << "[System not initialized. Type 'initialize' first.]\n";
     }
-    else if (command == "scheduler start") {
+    else if (command == "scheduler-start") {
         startScheduler();
     }
-    else if (command == "screen list") {
+    else if (command == "screen -ls") {
         showScreenList();
     }
     else if (command.rfind("screen s ", 0) == 0) {
@@ -78,11 +85,11 @@ void CommandHandler::executeCommand(const std::string& command) {
     else if (command.rfind("screen r ", 0) == 0) {
         resetScreen(command.substr(9));
     }
-    else if (command == "report util") {
-        reportUtilization();
+    else if (command == "report-util") {
+        showReportUtil();
     }
-    else if (command == "help") {
-        showHelp();
+    else if (command == "process-smi") {
+        showProcessSMI();
     }
     else {
         std::cout << "Unknown command. Type 'help' for available commands.\n";
@@ -114,6 +121,7 @@ void CommandHandler::doInitialize() {
         std::cout << " - Min Instructions: " << config.minInstructions << "\n";
         std::cout << " - Max Instructions: " << config.maxInstructions << "\n";
         std::cout << " - Delay per Exec: " << config.delaysPerExec << "\n";
+        prompt();
     }
     catch (const std::exception& ex) {
         std::cerr << "Initialization failed: " << ex.what() << "\n";
@@ -159,19 +167,10 @@ void CommandHandler::resetScreen(const std::string& name) {
     }
 }
 
-void CommandHandler::reportUtilization() {
+void CommandHandler::showReportUtil() {
     std::cout << "[CPU Utilization Report Placeholder]\n";
 }
 
-void CommandHandler::showHelp() {
-    std::cout << "Available commands:\n";
-    std::cout << " - initialize\n";
-    std::cout << " - scheduler start\n";
-    std::cout << " - screen list\n";
-    std::cout << " - screen s <name>\n";
-    std::cout << " - screen r <name>\n";
-    std::cout << " - report util\n";
-    std::cout << " - help\n";
-    std::cout << " - clear\n";
-    std::cout << " - exit\n";
+void CommandHandler::showProcessSMI() {
+    std::cout << "Placeholder\n";
 }
