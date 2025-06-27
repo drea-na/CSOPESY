@@ -1,0 +1,46 @@
+# === Folders ===
+.vs/
+x64/
+Debug/
+Release/
+ipch/
+out/
+
+# === IntelliSense & Build Caches ===
+*.ipch
+*.aps
+*.ncb
+*.sdf
+*.opensdf
+*.cache
+*.db
+*.VC.db
+*.VC.opendb
+
+# === Compiled Object and Binary Files ===
+*.obj
+*.pdb
+*.ilk
+*.exe
+*.dll
+*.lib
+*.exp
+
+# === Logs and Temp Files ===
+*.log
+*.tlog
+*.lastbuildstate
+*.tmp
+*.bak
+
+# === VS User Settings ===
+*.user
+*.suo
+*.sln.docstates
+
+# === Git ===
+*.orig
+
+# === Others (Optional) ===
+*.DS_Store
+Thumbs.db

@@ -1,0 +1,64 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Scheduler">
+      <UniqueIdentifier>{9d2a2470-ce93-4205-bacd-22f6a45eac91}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Process">
+      <UniqueIdentifier>{bb924222-5707-4db0-8c37-2d18e0c02264}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Config">
+      <UniqueIdentifier>{6bca6da0-1d6b-4695-bd62-1dcaa9b20194}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Screen">
+      <UniqueIdentifier>{ec08829f-d1c9-4809-b05c-0c2bb6d27ee7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Input">
+      <UniqueIdentifier>{2be10598-186f-40bf-b10b-04b5740f3da5}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="ConfigHandler.cpp">
+      <Filter>Config</Filter>
+    </ClCompile>
+    <ClCompile Include="Process.cpp">
+      <Filter>Process</Filter>
+    </ClCompile>
+    <ClCompile Include="Scheduler.cpp">
+      <Filter>Scheduler</Filter>
+    </ClCompile>
+    <ClCompile Include="ScreenMap.cpp">
+      <Filter>Screen</Filter>
+    </ClCompile>
+    <ClCompile Include="Screen.cpp">
+      <Filter>Screen</Filter>
+    </ClCompile>
+    <ClCompile Include="CommandHandler.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ConfigHandler.h">
+      <Filter>Config</Filter>
+    </ClInclude>
+    <ClInclude Include="Process.h">
+      <Filter>Process</Filter>
+    </ClInclude>
+    <ClInclude Include="Scheduler.h">
+      <Filter>Scheduler</Filter>
+    </ClInclude>
+    <ClInclude Include="ScreenMap.h">
+      <Filter>Screen</Filter>
+    </ClInclude>
+    <ClInclude Include="Screen.h">
+      <Filter>Screen</Filter>
+    </ClInclude>
+    <ClInclude Include="CommandHandler.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="config.txt" />
+  </ItemGroup>
+</Project>
