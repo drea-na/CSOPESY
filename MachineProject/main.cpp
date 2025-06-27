@@ -8,23 +8,22 @@
 #include <queue>
 #include <fstream>
 #include <chrono>
+#include <atomic>
+#include <condition_variable>
+#include <iomanip>
 #include "Console.h"
 #include "Scheduler.h"
 #include "CommandHandler.h"
 
-// Declare the screenMap variable
 std::map<std::string, Console> screenMap;
-
 std::queue<Console> readyQueue;
 std::mutex queueMutex;
 std::condition_variable cv;
 bool schedulerRunning = false;
 
-// global variables
 std::vector<ProcessInfo> processList;
 std::mutex processMutex;
 
-// Scheduler globals
 Scheduler* scheduler = nullptr;
 int global_core_count = 4;
 int global_quantum = 2;
@@ -40,17 +39,15 @@ std::atomic<int> activeCpuCycles(0);
 
 std::thread processGeneratorThread;
 std::atomic<bool> generatorRunning(false);
-
-// Add a global process ID counter
 int nextProcessId = 0;
 
-// Read config.txt
 void readConfig() {
-    std::ifstream fin("config.txt");
+    std::ifstream fin("C:\\Users\\hialo\\Documents\\GitHub\\CSOPESY-MO\\CSOPESY\\MachineProject\\config.txt");
     if (!fin) {
         std::cout << "config.txt not found. Using defaults." << std::endl;
         return;
     }
+
     std::string key;
     while (fin >> key) {
         if (key == "num-cpu") fin >> global_core_count;
@@ -64,58 +61,38 @@ void readConfig() {
         else if (key == "min-ins") fin >> global_min_ins;
         else if (key == "max-ins") fin >> global_max_ins;
         else if (key == "delay-per-exec") fin >> global_delay_per_exec;
-        // Add more config as needed
         else fin.ignore(1000, '\n');
     }
-    // Validation
-    if (global_core_count < 1 || global_core_count > 128) {
-        std::cout << "[config.txt] num-cpu out of range (1-128). Using default (4)." << std::endl;
-        global_core_count = 4;
-    }
-    if (global_quantum < 1) {
-        std::cout << "[config.txt] quantum-cycles out of range (>=1). Using default (2)." << std::endl;
-        global_quantum = 2;
-    }
-    if (global_batch_process_freq < 1) {
-        std::cout << "[config.txt] batch-process-freq out of range (>=1). Using default (1)." << std::endl;
-        global_batch_process_freq = 1;
-    }
-    if (global_min_ins < 1) {
-        std::cout << "[config.txt] min-ins out of range (>=1). Using default (1000)." << std::endl;
-        global_min_ins = 1000;
-    }
-    if (global_max_ins < global_min_ins) {
-        std::cout << "[config.txt] max-ins less than min-ins. Setting max-ins = min-ins." << std::endl;
-        global_max_ins = global_min_ins;
-    }
-    if (global_delay_per_exec < 0) {
-        std::cout << "[config.txt] delay-per-exec out of range (>=0). Using default (0)." << std::endl;
-        global_delay_per_exec = 0;
-    }
+
+    if (global_core_count < 1 || global_core_count > 128) global_core_count = 4;
+    if (global_quantum < 1) global_quantum = 2;
+    if (global_batch_process_freq < 1) global_batch_process_freq = 1;
+    if (global_min_ins < 1) global_min_ins = 1000;
+    if (global_max_ins < global_min_ins) global_max_ins = global_min_ins;
+    if (global_delay_per_exec < 0) global_delay_per_exec = 0;
 }
 
 void generateDummyProcess(const std::string& name) {
-    // Place process logs in process_logs/
-    system("mkdir process_logs >nul 2>&1"); // Windows: suppress output if exists
+    system("mkdir process_logs >nul 2>&1");
+
     Process* p = new Process(name, true);
     p->generateRandomInstructions(global_min_ins, global_max_ins);
+
     if (scheduler) {
         scheduler->addProcess(p);
-        // Add to process tracking list
-        {
-            std::lock_guard<std::mutex> lock(processMutex);
-            ProcessInfo info;
-            info.id = nextProcessId++;
-            info.name = name;
-            info.startTime = Console().getCurrentTimestamp();
-            info.coreID = -1; // Not assigned to core yet
-            info.progress = 0;
-            info.total = p->totalCommands;
-            info.finished = false;
-            processList.push_back(info);
-        }
-    } else {
-        delete p; // Clean up if no scheduler available
+        std::lock_guard<std::mutex> lock(processMutex);
+        ProcessInfo info;
+        info.id = nextProcessId++;
+        info.name = name;
+        info.startTime = Console().getCurrentTimestamp();
+        info.coreID = -1;
+        info.progress = 0;
+        info.total = p->totalCommands;
+        info.finished = false;
+        processList.push_back(info);
+    }
+    else {
+        delete p;
     }
 }
 
@@ -140,11 +117,7 @@ void showProcessList() {
     for (const auto& p : processList) {
         if (!p.finished) {
             std::cout << p.name << "\t(" << p.startTime << ")";
-            if (p.coreID == -1) {
-                std::cout << "  Core: N/A";
-            } else {
-                std::cout << "  Core: " << p.coreID;
-            }
+            std::cout << "  Core: " << (p.coreID == -1 ? "N/A" : std::to_string(p.coreID));
             std::cout << "  " << p.progress << " / " << p.total << std::endl;
         }
     }
@@ -163,7 +136,6 @@ void showProcessList() {
 void cpuWorker(int coreID) {
     while (schedulerRunning) {
         Console currentProcess;
-
         {
             std::unique_lock<std::mutex> lock(queueMutex);
             cv.wait(lock, [] { return !readyQueue.empty() || !schedulerRunning; });
@@ -174,17 +146,17 @@ void cpuWorker(int coreID) {
             readyQueue.pop();
         }
 
-        // Simulate executing 100 print commands
+        coresUsed++;
         for (int i = 1; i <= 100; ++i) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10)); // simulate work
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            totalCpuCycles++;
+            activeCpuCycles++;
 
-            // Log to file
-            std::ofstream outFile(currentProcess.getName() + ".txt", std::ios::app);
+            std::ofstream outFile("process_logs/" + currentProcess.getName() + ".txt", std::ios::app);
             auto now = Console().getCurrentTimestamp();
             outFile << "(" << now << ") Core:" << coreID << " - Hello world from " << currentProcess.getName() << "!\n";
             outFile.close();
 
-            // Update progress
             {
                 std::lock_guard<std::mutex> lock(processMutex);
                 for (auto& info : processList) {
@@ -197,6 +169,7 @@ void cpuWorker(int coreID) {
                 }
             }
         }
+        coresUsed--;
     }
 }
 
@@ -213,7 +186,8 @@ int main() {
             std::cout << "Shutting down... bye bye" << std::endl;
             if (scheduler) delete scheduler;
             running = false;
-        } else {
+        }
+        else {
             handler.handleCommands(command);
         }
         cpuCycles++;

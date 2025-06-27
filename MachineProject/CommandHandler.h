@@ -10,7 +10,7 @@ class CommandHandler {
 private:
     std::map<std::string, Console>& screenMap;
     Scheduler*& scheduler;
-    bool initialized = false; // Track if initialize has been called
+    bool initialized = false; // Tracks if initialize() has been called
 
 public:
     CommandHandler(std::map<std::string, Console>& screens, Scheduler*& sched)
@@ -19,8 +19,10 @@ public:
 
     bool isInitialized() const { return initialized; }
 
+    // Command parsing and execution
     bool handleCommands(const std::string& command);
 
+    // Individual command handlers
     void initialize();
     void schedulerStart();
     void schedulerStop();
@@ -28,9 +30,11 @@ public:
     void screenS(const std::string& name);
     void screenR(const std::string& name);
     void reportUtil();
-    void processSmi();
+    void processSmi();  // unused, but defined
+
+    // UI
     void printHeader();
     void printEnter();
 };
 
-#endif
+#endif // COMMANDHANDLER_H
