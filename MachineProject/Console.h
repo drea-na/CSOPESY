@@ -15,6 +15,7 @@ public:
     Console(std::string screenName);
 
     void displayScreen();
+	void updateProgress(int current, int total);
     std::string getCurrentTimestamp();
 
     //Getter functions

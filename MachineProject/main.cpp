@@ -8,6 +8,7 @@
 #include <queue>
 #include <fstream>
 #include <chrono>
+#include <iomanip>
 #include "Console.h"
 #include "Scheduler.h"
 #include "CommandHandler.h"
@@ -51,22 +52,28 @@ void readConfig() {
         std::cout << "config.txt not found. Using defaults." << std::endl;
         return;
     }
-    std::string key;
-    while (fin >> key) {
-        if (key == "num-cpu") fin >> global_core_count;
-        else if (key == "scheduler") {
-            std::string val; fin >> val;
-            if (val == "fcfs") global_algo = SchedulingAlgorithm::FCFS;
-            else if (val == "rr") global_algo = SchedulingAlgorithm::RR;
+    
+    try {
+        std::string key;
+        while (fin >> key) {
+            if (key == "num-cpu") fin >> global_core_count;
+            else if (key == "scheduler") {
+                std::string val; fin >> val;
+                if (val == "fcfs") global_algo = SchedulingAlgorithm::FCFS;
+                else if (val == "rr") global_algo = SchedulingAlgorithm::RR;
+            }
+            else if (key == "quantum-cycles") fin >> global_quantum;
+            else if (key == "batch-process-freq") fin >> global_batch_process_freq;
+            else if (key == "min-ins") fin >> global_min_ins;
+            else if (key == "max-ins") fin >> global_max_ins;
+            else if (key == "delay-per-exec") fin >> global_delay_per_exec;
+            // Add more config as needed
+            else fin.ignore(1000, '\n');
         }
-        else if (key == "quantum-cycles") fin >> global_quantum;
-        else if (key == "batch-process-freq") fin >> global_batch_process_freq;
-        else if (key == "min-ins") fin >> global_min_ins;
-        else if (key == "max-ins") fin >> global_max_ins;
-        else if (key == "delay-per-exec") fin >> global_delay_per_exec;
-        // Add more config as needed
-        else fin.ignore(1000, '\n');
+    } catch (const std::exception& e) {
+        std::cout << "Error reading config.txt: " << e.what() << ". Using defaults." << std::endl;
     }
+    
     // Validation
     if (global_core_count < 1 || global_core_count > 128) {
         std::cout << "[config.txt] num-cpu out of range (1-128). Using default (4)." << std::endl;
@@ -97,17 +104,14 @@ void readConfig() {
 void generateDummyProcess(const std::string& name) {
     // Place process logs in process_logs/
     system("mkdir process_logs >nul 2>&1"); // Windows: suppress output if exists
-    Process* p = new Process(name, true);
+    Process* p = new Process(name);
     p->generateRandomInstructions(global_min_ins, global_max_ins);
     if (scheduler) {
         scheduler->addProcess(p);
         // Add to process tracking list
         {
             std::lock_guard<std::mutex> lock(processMutex);
-            ProcessInfo info;
-            info.id = nextProcessId++;
-            info.name = name;
-            info.startTime = Console().getCurrentTimestamp();
+            ProcessInfo info(nextProcessId++, name);
             info.coreID = -1; // Not assigned to core yet
             info.progress = 0;
             info.total = p->totalCommands;
@@ -122,12 +126,18 @@ void generateDummyProcess(const std::string& name) {
 void showProcessList() {
     std::lock_guard<std::mutex> lock(processMutex);
 
+    // Calculate utilization based on current state rather than cumulative values
     double utilization = 0.0;
-    if (totalCpuCycles > 0) {
-        utilization = (double)activeCpuCycles / totalCpuCycles * 100.0;
+    int used = coresUsed.load();
+    
+    // If cores are currently being used, utilization should be based on that
+    if (used > 0) {
+        utilization = (double)used / global_core_count * 100.0;
+    } else {
+        // If no cores are used, utilization should be 0%
+        utilization = 0.0;
     }
 
-    int used = coresUsed.load();
     int available = global_core_count - used;
 
     std::cout << "CPU utilization: " << std::fixed << std::setprecision(2) << utilization << "%" << std::endl;
@@ -160,45 +170,6 @@ void showProcessList() {
     std::cout << "-------------------------------\n";
 }
 
-void cpuWorker(int coreID) {
-    while (schedulerRunning) {
-        Console currentProcess;
-
-        {
-            std::unique_lock<std::mutex> lock(queueMutex);
-            cv.wait(lock, [] { return !readyQueue.empty() || !schedulerRunning; });
-
-            if (!schedulerRunning && readyQueue.empty()) return;
-
-            currentProcess = readyQueue.front();
-            readyQueue.pop();
-        }
-
-        // Simulate executing 100 print commands
-        for (int i = 1; i <= 100; ++i) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10)); // simulate work
-
-            // Log to file
-            std::ofstream outFile(currentProcess.getName() + ".txt", std::ios::app);
-            auto now = Console().getCurrentTimestamp();
-            outFile << "(" << now << ") Core:" << coreID << " - Hello world from " << currentProcess.getName() << "!\n";
-            outFile.close();
-
-            // Update progress
-            {
-                std::lock_guard<std::mutex> lock(processMutex);
-                for (auto& info : processList) {
-                    if (info.name == currentProcess.getName()) {
-                        info.coreID = coreID;
-                        info.progress = i;
-                        if (i == 100) info.finished = true;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-}
 
 int main() {
     CommandHandler handler(screenMap, scheduler);

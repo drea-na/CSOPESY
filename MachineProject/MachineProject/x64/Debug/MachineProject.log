@@ -1,2 +1,30 @@
 ﻿  CommandHandler.cpp
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(515,36): warning C4101: 'e': unreferenced local variable
+  (compiling source file 'CommandHandler.cpp')
+  
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(604,64): warning C4267: 'argument': conversion from 'size_t' to '_Ty', possible loss of data
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(604,64): warning C4267:         with
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(604,64): warning C4267:         [
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(604,64): warning C4267:             _Ty=int
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(604,64): warning C4267:         ]
+  (compiling source file 'CommandHandler.cpp')
+  
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Scheduler.h(151,44): warning C4101: 'e': unreferenced local variable
+  (compiling source file 'CommandHandler.cpp')
+  
+  main.cpp
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(515,36): warning C4101: 'e': unreferenced local variable
+  (compiling source file 'main.cpp')
+  
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(604,64): warning C4267: 'argument': conversion from 'size_t' to '_Ty', possible loss of data
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(604,64): warning C4267:         with
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(604,64): warning C4267:         [
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(604,64): warning C4267:             _Ty=int
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(604,64): warning C4267:         ]
+  (compiling source file 'main.cpp')
+  
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Scheduler.h(151,44): warning C4101: 'e': unreferenced local variable
+  (compiling source file 'main.cpp')
+  
+  Generating Code...
   MachineProject.vcxproj -> D:\DLSU\CSOPESY\CSOPESY\MachineProject\x64\Debug\MachineProject.exe

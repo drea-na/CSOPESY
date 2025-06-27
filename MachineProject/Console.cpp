@@ -8,7 +8,7 @@
 Console::Console(std::string screenName) {
     name = screenName;
     currentLine = 1;
-    totalLines = 100;
+    totalLines = 0;
     timestamp = getCurrentTimestamp();
 }
 
@@ -21,6 +21,11 @@ void Console::displayScreen() {
     std::cout << "Started at: " << timestamp << std::endl;
     std::cout << "(Type 'exit' to return to the main menu)\n";
     //std::cout << "Enter command: ";
+}
+
+void Console::updateProgress(int current, int total) {
+        currentLine = current;
+		totalLines = total;
 }
 
 // Helper function to get the current timestamp

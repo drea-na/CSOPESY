@@ -73,7 +73,9 @@ public:
             {
                 std::unique_lock<std::mutex> lock(queueMutex);
                 cv.wait(lock, [&]() { return !processQueue.empty() || stopFlag; });
-                if (stopFlag || processQueue.empty()) { 
+                if (stopFlag) break;
+                
+                if (processQueue.empty()) {
 					totalCpuCycles ++;
                     continue; 
                 }
@@ -90,61 +92,73 @@ public:
 
             coresUsed++;
 
-            if (algorithm == SchedulingAlgorithm::FCFS) {
-                while (p->executedCommands < p->totalCommands) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(20));
-                    int dummyTick = 0;
-                    bool running = p->executeNextInstruction(coreId, dummyTick);
-                    totalCpuCycles++;
-                    activeCpuCycles++;
-                    {
-                        std::lock_guard<std::mutex> lock(processMutex);
-                        for (auto& info : processList) {
-                            if (info.name == p->name) {
-                                info.coreID = coreId;
-                                info.progress = p->executedCommands;
-                                if (!running) {
-                                    info.finished = true;
+            try {
+                if (algorithm == SchedulingAlgorithm::FCFS) {
+                    while (p->executedCommands < p->totalCommands) {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+                        int dummyTick = 0;
+                        bool running = p->executeNextInstruction(coreId);
+                        totalCpuCycles++;
+                        activeCpuCycles++;
+                        {
+                            std::lock_guard<std::mutex> lock(processMutex);
+                            for (auto& info : processList) {
+                                if (info.name == p->name) {
+                                    info.coreID = coreId;
+                                    info.progress = p->executedCommands;
+                                    if (!running) {
+                                        info.finished = true;
+                                    }
+                                    break;
                                 }
-                                break;
+                            }
+                        }
+                        if (!running) break;
+                    }
+                } else if (algorithm == SchedulingAlgorithm::RR) {
+                    int cycles = 0;
+                    bool running = true;
+                    while (p->executedCommands < p->totalCommands && cycles < quantumCycles && running) {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+                        int dummyTick = 0;
+                        running = p->executeNextInstruction(coreId);
+                        ++cycles;
+                        totalCpuCycles++;
+                        activeCpuCycles++;
+                        {
+                            std::lock_guard<std::mutex> lock(processMutex);
+                            for (auto& info : processList) {
+                                if (info.name == p->name) {
+                                    info.coreID = coreId;
+                                    info.progress = p->executedCommands;
+                                    if (!running) {
+                                        info.finished = true;
+                                    }
+                                    break;
+                                }
                             }
                         }
                     }
-                    if (!running) break;
-                }
-            } else if (algorithm == SchedulingAlgorithm::RR) {
-                int cycles = 0;
-                bool running = true;
-                while (p->executedCommands < p->totalCommands && cycles < quantumCycles && running) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(20));
-                    int dummyTick = 0;
-                    running = p->executeNextInstruction(coreId, dummyTick);
-                    ++cycles;
-                    totalCpuCycles++;
-                    activeCpuCycles++;
-                    {
-                        std::lock_guard<std::mutex> lock(processMutex);
-                        for (auto& info : processList) {
-                            if (info.name == p->name) {
-                                info.coreID = coreId;
-                                info.progress = p->executedCommands;
-                                if (!running) {
-                                    info.finished = true;
-                                }
-                                break;
-                            }
-                        }
+                    // If not finished, requeue
+                    if (p->executedCommands < p->totalCommands && running) {
+                        std::lock_guard<std::mutex> lock(queueMutex);
+                        processQueue.push_back(p);
+                        cv.notify_one();
+                        coresUsed--;
+                        continue;
                     }
                 }
-                // If not finished, requeue
-                if (p->executedCommands < p->totalCommands && running) {
-                    std::lock_guard<std::mutex> lock(queueMutex);
-                    processQueue.push_back(p);
-                    cv.notify_one();
-                    coresUsed--;
-                    continue;
+            } catch (const std::exception& e) {
+                // Handle process execution errors
+                std::lock_guard<std::mutex> lock(processMutex);
+                for (auto& info : processList) {
+                    if (info.name == p->name) {
+                        info.finished = true;
+                        break;
+                    }
                 }
             }
+            
             coresUsed--;
             delete p;
         }
