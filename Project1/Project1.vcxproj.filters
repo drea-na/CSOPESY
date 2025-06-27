@@ -13,7 +13,7 @@
     <Filter Include="Screen">
       <UniqueIdentifier>{ec08829f-d1c9-4809-b05c-0c2bb6d27ee7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Input">
+    <Filter Include="Command">
       <UniqueIdentifier>{2be10598-186f-40bf-b10b-04b5740f3da5}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -35,7 +35,7 @@
       <Filter>Screen</Filter>
     </ClCompile>
     <ClCompile Include="CommandHandler.cpp">
-      <Filter>Input</Filter>
+      <Filter>Command</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -55,7 +55,7 @@
       <Filter>Screen</Filter>
     </ClInclude>
     <ClInclude Include="CommandHandler.h">
-      <Filter>Input</Filter>
+      <Filter>Command</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
