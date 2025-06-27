@@ -112,3 +112,11 @@ std::vector<ProcessInfo> Scheduler::getProcessList() {
     std::lock_guard<std::mutex> lock(processMutex);
     return processList;
 }
+
+ProcessInfo* Scheduler::getProcessInfoByName(const std::string& name) {
+    std::lock_guard<std::mutex> lock(processMutex);
+    for (auto& info : processList) {
+        if (info.name == name) return &info;
+    }
+    return nullptr;
+}

@@ -161,4 +161,7 @@ void Process::generateRandomInstructions(int minIns, int maxIns) {
     executedCommands = 0;
     currentInstr = 0;
     sleepTicks = 0;
+
+    logFile.open(name + ".txt", std::ios::out | std::ios::trunc);
+
 }

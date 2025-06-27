@@ -2,11 +2,22 @@
 #include "ConfigHandler.h"
 #include <iostream>
 #include <sstream>
+#include <fstream>
+#include <algorithm> // for trim helpers
 
 // === Static Members ===
 std::map<std::string, Screen>* CommandHandler::screenMap = nullptr;
 Scheduler* CommandHandler::scheduler = nullptr;
 bool CommandHandler::initialized = false;
+std::string CommandHandler::lastScreenedProcessName = "";
+
+// Helper function to trim leading and trailing spaces
+static std::string trim(const std::string& s) {
+    size_t start = s.find_first_not_of(' ');
+    if (start == std::string::npos) return ""; // all spaces
+    size_t end = s.find_last_not_of(' ');
+    return s.substr(start, end - start + 1);
+}
 
 // === Initialization ===
 void CommandHandler::initialize(std::map<std::string, Screen>& screenMapRef, Scheduler*& schedulerRef) {
@@ -30,22 +41,24 @@ void CommandHandler::handle() {
         if (!initialized) {
             if (input == "initialize") {
                 doInitialize();
-            } else {
+            }
+            else {
                 std::cout << "[System not initialized. Type 'initialize' to start or 'exit' to quit.]\n";
                 prompt();
             }
-        } else {
+        }
+        else {
             if (input == "clear") {
                 system("cls");
                 drawHeader();
-            } else {
+            }
+            else {
                 executeCommand(input);
             }
             prompt();
         }
     }
 }
-
 
 // === Console UI ===
 void CommandHandler::drawHeader() {
@@ -79,11 +92,23 @@ void CommandHandler::executeCommand(const std::string& command) {
     else if (command == "screen -ls") {
         showScreenList();
     }
-    else if (command.rfind("screen s ", 0) == 0) {
-        showScreen(command.substr(9));
+    else if (command.rfind("screen -s ", 0) == 0) {
+        std::string procName = trim(command.substr(10));
+        if (procName.empty()) {
+            std::cout << "Please provide a process name for screen -s.\n";
+        }
+        else {
+            newProcess(procName);
+        }
     }
-    else if (command.rfind("screen r ", 0) == 0) {
-        resetScreen(command.substr(9));
+    else if (command.rfind("screen -r ", 0) == 0) {
+        std::string procName = trim(command.substr(10));
+        if (procName.empty()) {
+            std::cout << "Please provide a process name for screen -r.\n";
+        }
+        else {
+            showProcessScreen(procName);
+        }
     }
     else if (command == "report-util") {
         showReportUtil();
@@ -145,32 +170,125 @@ void CommandHandler::showScreenList() {
     }
 }
 
-void CommandHandler::showScreen(const std::string& name) {
-    auto it = screenMap->find(name);
-    if (it != screenMap->end()) {
-        std::cout << "Screen: " << name << "\n";
-        it->second.displayScreen();
+void CommandHandler::newProcess(const std::string& name) {
+    if (!scheduler) {
+        std::cout << "[Scheduler not initialized]\n";
+        return;
     }
-    else {
-        std::cout << "Screen not found.\n";
+
+    // Check if process already exists
+    ProcessInfo* info = scheduler->getProcessInfoByName(name);
+    if (info && !info->finished) {
+        std::cout << "Process " << name << " is already running.\n";
+        return;
+    }
+
+    // Create new process, add to scheduler, and start interaction
+    Process* proc = new Process(name);
+    scheduler->addProcess(proc);
+
+    system("cls");
+    lastScreenedProcessName = name;
+
+    std::string cmd;
+    while (true) {
+        std::cout << "[screen: " << name << "]> ";
+        std::getline(std::cin, cmd);
+
+        if (cmd == "process-smi") {
+            showProcessSMI();
+        }
+        else if (cmd == "exit") {
+            lastScreenedProcessName = "";
+            system("cls");
+            drawHeader();
+            break;
+        }
+        else {
+            std::cout << "Unknown command. Available: process-smi, exit\n";
+        }
     }
 }
 
-void CommandHandler::resetScreen(const std::string& name) {
-    auto it = screenMap->find(name);
-    if (it != screenMap->end()) {
-        it->second.setCurrentLine(0);
-        std::cout << "Screen reset.\n";
+void CommandHandler::showProcessScreen(const std::string& name) {
+    if (!scheduler) return;
+
+    ProcessInfo* info = scheduler->getProcessInfoByName(name);
+    if (!info || info->finished) {
+        std::cout << "Process " << name << " not found.\n";
+        return;
     }
-    else {
-        std::cout << "Screen not found.\n";
+
+    system("cls");
+    lastScreenedProcessName = name;
+
+    std::string cmd;
+    while (true) {
+        std::cout << "[screen: " << name << "]> ";
+        std::getline(std::cin, cmd);
+
+        if (cmd == "process-smi") {
+            showProcessSMI();
+        }
+        else if (cmd == "exit") {
+            lastScreenedProcessName = "";
+            system("cls");
+            drawHeader();
+            break;
+        }
+        else {
+            std::cout << "Unknown command. Available: process-smi, exit\n";
+        }
     }
 }
 
 void CommandHandler::showReportUtil() {
-    std::cout << "[CPU Utilization Report Placeholder]\n";
+    if (!scheduler) {
+        std::cout << "No scheduler found.\n";
+        return;
+    }
+
+    std::vector<ProcessInfo> processes = scheduler->getProcessList();
+    std::cout << "Process Report:\n";
+    for (const auto& p : processes) {
+        std::cout << "ID: " << p.id << " | Name: " << p.name
+            << " | Core: " << p.coreID
+            << " | Progress: " << p.progress << "/" << p.total
+            << " | " << (p.finished ? "Finished" : "Running") << "\n";
+    }
 }
 
 void CommandHandler::showProcessSMI() {
-    std::cout << "Placeholder\n";
+    if (!lastScreenedProcessName.empty() && scheduler) {
+        ProcessInfo* info = scheduler->getProcessInfoByName(lastScreenedProcessName);
+        if (!info) {
+            std::cout << "Process not found.\n";
+            return;
+        }
+
+        std::cout << "Process name: " << info->name << "\n";
+        std::cout << "ID: " << info->id << "\n";
+
+        // Try to read from log file
+        std::ifstream logFile(info->name + ".txt");
+        std::string line;
+        std::cout << "Logs:\n";
+        if (logFile.is_open()) {
+            while (std::getline(logFile, line)) {
+                std::cout << line << "\n";
+            }
+        }
+        else {
+            std::cout << "No print logs yet.\n";
+        }
+
+        std::cout << "Instruction line: " << info->progress << "\n";
+        std::cout << "Lines of code: " << info->total << "\n";
+
+        if (info->finished)
+            std::cout << "Finished!\n";
+    }
+    else {
+        std::cout << "No active screen process.\n";
+    }
 }
