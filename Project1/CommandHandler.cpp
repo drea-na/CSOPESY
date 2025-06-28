@@ -153,48 +153,73 @@ void CommandHandler::startScheduler() {
         std::cout << "[No scheduler found]\n";
         return;
     }
-    scheduler->start();
-    batchingEnabled = true;
 
-    Config config = ConfigHandler::loadFromFile("config.txt");
-    batcherThread = std::thread([config]() {
-        int counter = 1;
-        while (batchingEnabled) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(config.batchProcessFreq * 1000));
-            if (!batchingEnabled) break;
-
-            std::ostringstream oss;
-            oss << "process" << std::setw(2) << std::setfill('0') << counter++;
-            std::string procName = oss.str();
-
-            Process* proc = new Process(procName);
-            proc->generateRandomInstructions(config.minInstructions, config.maxInstructions);
-            scheduler->addProcess(proc);
-
-            Screen screen(procName);
-            screen.setTotalLines(proc->totalCommands);
-            (*screenMap)[procName] = screen;
-        }
-        });
-    std::cout << "Scheduler started. Generating new process every " << config.batchProcessFreq << " CPU tick.\n";
     if (batchingEnabled) {
         std::cout << "[Scheduler already running]\n";
         return;
     }
 
+    Config config = ConfigHandler::loadFromFile("config.txt");
+    batchingEnabled = true;
+
+    batcherThread = std::thread([config]() {
+        int counter = 1;
+        //std::cout << "[Batcher thread started]\n";
+
+        while (batchingEnabled) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(config.batchProcessFreq * 1000));
+
+            if (!batchingEnabled) break;
+
+            try {
+                std::ostringstream oss;
+                oss << "process" << std::setw(2) << std::setfill('0') << counter++;
+                std::string procName = oss.str();
+
+                Process* proc = new Process(procName);
+                proc->generateRandomInstructions(config.minInstructions, config.maxInstructions);
+                scheduler->addProcess(proc);
+
+                Screen screen(procName);
+                screen.setTotalLines(proc->totalCommands);
+                (*screenMap)[procName] = screen;
+
+            }
+            catch (const std::exception& e) {
+                std::cerr << "[Batcher error] " << e.what() << "\n";
+                break;
+            }
+        }
+
+        //std::cout << "[Batcher thread exited]\n";
+        });
+
+    std::cout << "Scheduler started. Generating new process every " << config.batchProcessFreq << " CPU tick.\n";
 }
+
 
 void CommandHandler::stopScheduler() {
     if (!scheduler) {
-        std::cout << "[No scheduler running]\n";
+        std::cout << "[No scheduler found]\n";
         return;
     }
-    batchingEnabled = false;
-    if (batcherThread.joinable()) batcherThread.join();
-    scheduler->stop();
-    std::cout << "[Scheduler stopped]\n";
 
+    if (!batchingEnabled) {
+        std::cout << "[Scheduler is not running]\n";
+        return;
+    }
+
+    batchingEnabled = false;
+
+    if (batcherThread.joinable()) {
+        batcherThread.join(); 
+    }
+
+    scheduler->stop(); 
+    std::cout << "[Scheduler stopped]\n";
+    prompt();
 }
+
 
 void CommandHandler::showScreenList() {
     std::cout << "Available screens:\n";
