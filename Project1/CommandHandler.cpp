@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <thread>
 #include <chrono>
+#include <ctime>
 
 std::map<std::string, Screen>* CommandHandler::screenMap = nullptr;
 Scheduler* CommandHandler::scheduler = nullptr;
@@ -222,11 +223,57 @@ void CommandHandler::stopScheduler() {
 
 
 void CommandHandler::showScreenList() {
-    std::cout << "Available screens:\n";
-    for (const auto& [name, screen] : *screenMap) {
-        std::cout << " - " << name << "\n";
+    if (!scheduler) {
+        std::cout << "Scheduler not initialized.\n";
+        return;
+    }
+
+    int totalCores = scheduler->getCoreCount(); // assuming this exists
+    auto processList = scheduler->getProcessList();
+
+    int usedCores = 0;
+    int finished = 0;
+
+    for (const auto& p : processList) {
+        if (!p.finished) usedCores++;
+        else finished++;
+    }
+
+    int utilization = static_cast<int>((usedCores / (float)totalCores) * 100);
+
+    std::cout << "CPU utilization: " << utilization << "%\n";
+    std::cout << "Cores used: " << usedCores << "\n";
+    std::cout << "Cores available: " << (totalCores - usedCores) << "\n";
+    std::cout << "----------------------------\n";
+
+    std::cout << "Running processes:\n";
+    for (const auto& p : processList) {
+        if (!p.finished) {
+            printProcessLine(p);
+        }
+    }
+
+    std::cout << "\nFinished processes:\n";
+    for (const auto& p : processList) {
+        if (p.finished) {
+            printProcessLine(p);
+        }
     }
 }
+
+void CommandHandler::printProcessLine(const ProcessInfo& p) {
+    auto now = std::chrono::system_clock::now();
+    std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+    std::tm tm;
+    localtime_s(&tm, &now_c);
+
+    char timestamp[32];
+    std::strftime(timestamp, sizeof(timestamp), "(%m/%d/%Y %I:%M:%S%p)", &tm);
+
+    std::cout << p.name << " " << timestamp << " Core:" << p.coreID
+        << " " << p.progress << "/" << p.total << "\n";
+}
+
 
 void CommandHandler::newProcess(const std::string& name) {
     if (!scheduler) {
@@ -324,15 +371,49 @@ void CommandHandler::showReportUtil() {
         return;
     }
 
-    std::vector<ProcessInfo> processes = scheduler->getProcessList();
-    std::cout << "Process Report:\n";
-    for (const auto& p : processes) {
-        std::cout << "ID: " << p.id << " | Name: " << p.name
-            << " | Core: " << p.coreID
-            << " | Progress: " << p.progress << "/" << p.total
-            << " | " << (p.finished ? "Finished" : "Running") << "\n";
+    int totalCores = scheduler->getCoreCount();
+    auto processList = scheduler->getProcessList();
+    int usedCores = 0;
+
+    for (const auto& p : processList) {
+        if (!p.finished) usedCores++;
     }
+
+    int utilization = static_cast<int>((usedCores / (float)totalCores) * 100);
+
+    std::ofstream log("csopesy-log.txt");
+    log << "CPU utilization: " << utilization << "%\n";
+    log << "Cores used: " << usedCores << "\n";
+    log << "Cores available: " << (totalCores - usedCores) << "\n";
+    log << "----------------------------\n";
+
+    log << "Running processes:\n";
+    for (const auto& p : processList) {
+        if (!p.finished) logProcessLine(log, p);
+    }
+
+    log << "\nFinished processes:\n";
+    for (const auto& p : processList) {
+        if (p.finished) logProcessLine(log, p);
+    }
+
+    log.close();
+    std::cout << "Report generated at csopesy-log.txt!\n";
 }
+
+void CommandHandler::logProcessLine(std::ofstream& log, const ProcessInfo& p) {
+    auto now = std::chrono::system_clock::now();
+    std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+    std::tm tm;
+    localtime_s(&tm, &now_c);
+
+    char timestamp[32];
+    std::strftime(timestamp, sizeof(timestamp), "(%m/%d/%Y %I:%M:%S%p)", &tm);
+
+    log << p.name << " " << timestamp << " Core:" << p.coreID
+        << " " << p.progress << "/" << p.total << "\n";
+}
+
 
 void CommandHandler::showProcessSMI() {
     if (!lastScreenedProcessName.empty() && scheduler) {
@@ -344,14 +425,20 @@ void CommandHandler::showProcessSMI() {
 
         std::cout << "Process name: " << info->name << "\n";
         std::cout << "ID: " << info->id << "\n";
+        std::cout << "Logs:\n";
 
-        // Try to read from log file
         std::ifstream logFile(info->name + ".txt");
         std::string line;
-        std::cout << "Logs:\n";
         if (logFile.is_open()) {
             while (std::getline(logFile, line)) {
-                std::cout << line << "\n";
+                auto now = std::chrono::system_clock::now();
+                std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+                std::tm tm;
+                localtime_s(&tm, &now_c);
+
+                char timestamp[32];
+                std::strftime(timestamp, sizeof(timestamp), "(%m/%d/%Y %I:%M:%S%p)", &tm);
+                std::cout << timestamp << " Core:" << info->coreID << " \"" << line << "\"\n";
             }
         }
         else {
@@ -360,7 +447,6 @@ void CommandHandler::showProcessSMI() {
 
         std::cout << "Instruction line: " << info->progress << "\n";
         std::cout << "Lines of code: " << info->total << "\n";
-
         if (info->finished)
             std::cout << "Finished!\n";
     }

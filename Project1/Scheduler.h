@@ -42,6 +42,7 @@ public:
     void worker(int coreId);
     std::vector<ProcessInfo> getProcessList();
     ProcessInfo* getProcessInfoByName(const std::string& name);
+    int getCoreCount() const;
 };
 
 #endif

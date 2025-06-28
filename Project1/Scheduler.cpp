@@ -130,3 +130,8 @@ void Scheduler::stop() {
     workerThreads.clear();
     started = false;  // <--- Add this line to allow restart
 }
+
+int Scheduler::getCoreCount() const {
+    return coreCount;
+}
+

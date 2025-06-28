@@ -1,5 +1,6 @@
 #ifndef COMMANDHANDLER_H
 #define COMMANDHANDLER_H
+
 #include <thread>
 #include <string>
 #include <map>
@@ -8,42 +9,31 @@
 
 class CommandHandler {
 public:
-    // Initialize references to screen map and scheduler
     static void initialize(std::map<std::string, Screen>& screenMapRef, Scheduler*& schedulerRef);
-
-    // Main input loop
     static void handle();
 
 private:
-    // Command execution
     static void executeCommand(const std::string& command);
-
-    // Command handlers
     static void doInitialize();
     static void startScheduler();
-    static void showScreenList();
     static void stopScheduler();
-
-    // NEW: Create a new process screen
-    static void newProcess(const std::string& name);
-    static std::thread batcherThread;
-    static std::atomic<bool> batchingEnabled;
-
-    // NEW: Show existing process screen
-    static void showProcessScreen(const std::string& name);
-
+    static void showScreenList();
     static void showReportUtil();
     static void showProcessSMI();
-
-    // Console UI helpers
+    static void newProcess(const std::string& name);
+    static void showProcessScreen(const std::string& name);
     static void drawHeader();
     static void prompt();
 
-private:
+    static void printProcessLine(const ProcessInfo& p);
+    static void logProcessLine(std::ofstream& log, const ProcessInfo& p);
+
     static std::map<std::string, Screen>* screenMap;
     static Scheduler* scheduler;
     static bool initialized;
     static std::string lastScreenedProcessName;
+    static std::thread batcherThread;
+    static std::atomic<bool> batchingEnabled;
 };
 
 #endif // COMMANDHANDLER_H
