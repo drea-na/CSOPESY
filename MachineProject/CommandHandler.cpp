@@ -230,16 +230,7 @@ void CommandHandler::screenS(const std::string& name) {
             printHeader();
         } else if (input == "process-smi") {
             inScreen = true;
-            it = std::find_if(processList.begin(), processList.end(), [&](const ProcessInfo& p){ return p.name == name; });
-            if (it != processList.end()) {
-                std::cout << "\nProcess name: " << it->name << std::endl;
-                std::cout << "ID: " << it->id << std::endl;
-                std::cout << "Current instruction line: " << it->progress << std::endl;
-                std::cout << "Lines of code: " << it->total << std::endl;
-                if (it->finished) std::cout << "Finished!" << std::endl;
-            } else {
-                std::cout << "Process " << name << " not found" << std::endl;
-            }
+            processSmi(name);
         } else {
             std::cout << "Unknown command in screen '" << name << "'. Type 'exit' to leave the screen." << std::endl;
         }
@@ -297,16 +288,7 @@ void CommandHandler::screenR(const std::string& name) {
             printHeader();
         } else if (input == "process-smi") {
             inScreen = true;
-            it = std::find_if(processList.begin(), processList.end(), [&](const ProcessInfo& p){ return p.name == name; });
-            if (it != processList.end()) {
-                std::cout << "\nProcess name: " << it->name << std::endl;
-                std::cout << "ID: " << it->id << std::endl;
-                std::cout << "Current instruction line: " << it->progress << std::endl;
-                std::cout << "Lines of code: " << it->total << std::endl;
-                if (it->finished) std::cout << "Finished!" << std::endl;
-            } else {
-                std::cout << "Process " << name << " not found" << std::endl;
-            }
+            processSmi(name);
         } else {
             std::cout << "Unknown command in screen '" << name << "'. Type 'exit' to leave the screen." << std::endl;
         }
@@ -376,12 +358,39 @@ void CommandHandler::reportUtil() {
     printEnter();
 }
 
-void CommandHandler::processSmi() {
-    std::cout << "\nProcess name: " << Console().getName() << std::endl;
-    std::cout << "ID: " << std::endl;
-    std::cout << "Logs:" << std::endl;
-    std::cout << "Current instruction line: " << Console().getCurrentLine() << std::endl;
-    std::cout << "Lines of code:" << Console().getTotalLines() << std::endl;
+void CommandHandler::processSmi(const std::string& processName) {
+    // Find the process in the process list
+    auto it = std::find_if(processList.begin(), processList.end(), 
+                          [&](const ProcessInfo& p){ return p.name == processName; });
+    
+    if (it != processList.end()) {
+        std::cout << "\nProcess name: " << it->name << std::endl;
+        std::cout << "ID: " << it->id << std::endl;
+        std::cout << "Logs:" << std::endl;
+        
+        // Read and display the last log entry
+        std::ifstream logFile("process_logs/" + it->name + ".txt");
+        if (logFile) {
+            std::vector<std::string> lines;
+            std::string line;
+            while (std::getline(logFile, line)) {
+                lines.push_back(line);
+            }
+            if (!lines.empty()) {
+                // Display the last log entry
+                std::cout << lines.back() << std::endl;
+            }
+        }
+        
+        std::cout << "Current instruction line: " << it->progress << std::endl;
+        std::cout << "Lines of code: " << it->total << std::endl;
+        
+        if (it->finished) {
+            std::cout << "Finished!" << std::endl;
+        }
+    } else {
+        std::cout << "Process not found in process list." << std::endl;
+    }
 }
 
 void CommandHandler::printHeader() {
@@ -399,7 +408,7 @@ void CommandHandler::printHeader() {
     std::cout << Default << "Dionela, Valiant Lance" << Default << std::endl;
     std::cout << Default << "Dy, Fatima Kriselle" << Default << std::endl;
     std::cout << Default << "Loria, Andrea Euceli" << Default << std::endl;
-    std::cout << Default << "\nLast Updated: " << Y << "06-27-2025" << Default << std::endl;
+    std::cout << Default << "\nLast Updated: " << Y << "06-28-2025" << Default << std::endl;
     std::cout << Default << "\n" << std::string(50, '-') << Default << std::endl;
     std::cout << Y << "Type 'exit' to quit, 'clear' to clear the screen" << Default << std::endl;
     std::cout << "root:\\> ";
