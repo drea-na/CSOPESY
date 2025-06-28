@@ -3,22 +3,24 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
-#include <algorithm> // for trim helpers
+#include <algorithm>
+#include <iomanip>
+#include <thread>
+#include <chrono>
 
-// === Static Members ===
 std::map<std::string, Screen>* CommandHandler::screenMap = nullptr;
 Scheduler* CommandHandler::scheduler = nullptr;
 bool CommandHandler::initialized = false;
 std::string CommandHandler::lastScreenedProcessName = "";
+std::thread CommandHandler::batcherThread;
+std::atomic<bool> CommandHandler::batchingEnabled = false;
 
-// Helper function to trim leading and trailing spaces
 static std::string trim(const std::string& s) {
     size_t start = s.find_first_not_of(' ');
-    if (start == std::string::npos) return ""; // all spaces
+    if (start == std::string::npos) return "";
     size_t end = s.find_last_not_of(' ');
     return s.substr(start, end - start + 1);
 }
-
 // === Initialization ===
 void CommandHandler::initialize(std::map<std::string, Screen>& screenMapRef, Scheduler*& schedulerRef) {
     screenMap = &screenMapRef;
@@ -27,6 +29,7 @@ void CommandHandler::initialize(std::map<std::string, Screen>& screenMapRef, Sch
     prompt();
 }
 
+
 // === Input Loop ===
 void CommandHandler::handle() {
     std::string input;
@@ -34,13 +37,17 @@ void CommandHandler::handle() {
         std::getline(std::cin, input);
 
         if (input == "exit") {
+            batchingEnabled = false;
+            if (batcherThread.joinable()) batcherThread.join();
             std::cout << "Shutting Down...\n";
             break;
         }
 
+
         if (!initialized) {
             if (input == "initialize") {
                 doInitialize();
+                prompt();
             }
             else {
                 std::cout << "[System not initialized. Type 'initialize' to start or 'exit' to quit.]\n";
@@ -89,26 +96,19 @@ void CommandHandler::executeCommand(const std::string& command) {
     else if (command == "scheduler-start") {
         startScheduler();
     }
+    else if (command == "scheduler-stop") {
+        stopScheduler();
+    }
     else if (command == "screen -ls") {
         showScreenList();
     }
     else if (command.rfind("screen -s ", 0) == 0) {
         std::string procName = trim(command.substr(10));
-        if (procName.empty()) {
-            std::cout << "Please provide a process name for screen -s.\n";
-        }
-        else {
-            newProcess(procName);
-        }
+        if (!procName.empty()) newProcess(procName);
     }
     else if (command.rfind("screen -r ", 0) == 0) {
         std::string procName = trim(command.substr(10));
-        if (procName.empty()) {
-            std::cout << "Please provide a process name for screen -r.\n";
-        }
-        else {
-            showProcessScreen(procName);
-        }
+        if (!procName.empty()) showProcessScreen(procName);
     }
     else if (command == "report-util") {
         showReportUtil();
@@ -127,40 +127,73 @@ void CommandHandler::doInitialize() {
         std::cout << "[System already initialized]\n";
         return;
     }
-
     try {
         Config config = ConfigHandler::loadFromFile("config.txt");
-
-        SchedulingAlgorithm algorithm = SchedulingAlgorithm::FCFS;
-        if (config.scheduler == "RR") algorithm = SchedulingAlgorithm::RR;
-
+        SchedulingAlgorithm algorithm = config.scheduler == "RR" ? SchedulingAlgorithm::RR : SchedulingAlgorithm::FCFS;
         scheduler = new Scheduler(config.numCPU, algorithm, config.quantumCycles);
         initialized = true;
 
+        std::cout << "[Config Loaded]\n";
+        std::cout << "  Cores: " << config.numCPU << "\n";
+        std::cout << "  Scheduler: " << config.scheduler << "\n";
+        std::cout << "  Quantum: " << config.quantumCycles << "\n";
+        std::cout << "  Batch Freq (s): " << config.batchProcessFreq << "\n";
+        std::cout << "  Instruction Range: " << config.minInstructions << " - " << config.maxInstructions << "\n";
+
         std::cout << "[System initialized successfully]\n";
-        std::cout << "Loaded configuration:\n";
-        std::cout << " - CPU Cores: " << config.numCPU << "\n";
-        std::cout << " - Scheduler: " << config.scheduler << "\n";
-        std::cout << " - Quantum Cycles: " << config.quantumCycles << "\n";
-        std::cout << " - Batch Freq: " << config.batchProcessFreq << "\n";
-        std::cout << " - Min Instructions: " << config.minInstructions << "\n";
-        std::cout << " - Max Instructions: " << config.maxInstructions << "\n";
-        std::cout << " - Delay per Exec: " << config.delaysPerExec << "\n";
-        prompt();
     }
     catch (const std::exception& ex) {
         std::cerr << "Initialization failed: " << ex.what() << "\n";
     }
+
 }
 
 void CommandHandler::startScheduler() {
-    if (scheduler) {
-        scheduler->start();
-        std::cout << "[Scheduler started]\n";
-    }
-    else {
+    if (!scheduler) {
         std::cout << "[No scheduler found]\n";
+        return;
     }
+    scheduler->start();
+    batchingEnabled = true;
+
+    Config config = ConfigHandler::loadFromFile("config.txt");
+    batcherThread = std::thread([config]() {
+        int counter = 1;
+        while (batchingEnabled) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(config.batchProcessFreq * 1000));
+            if (!batchingEnabled) break;
+
+            std::ostringstream oss;
+            oss << "process" << std::setw(2) << std::setfill('0') << counter++;
+            std::string procName = oss.str();
+
+            Process* proc = new Process(procName);
+            proc->generateRandomInstructions(config.minInstructions, config.maxInstructions);
+            scheduler->addProcess(proc);
+
+            Screen screen(procName);
+            screen.setTotalLines(proc->totalCommands);
+            (*screenMap)[procName] = screen;
+        }
+        });
+    std::cout << "Scheduler started. Generating new process every " << config.batchProcessFreq << " CPU tick.\n";
+    if (batchingEnabled) {
+        std::cout << "[Scheduler already running]\n";
+        return;
+    }
+
+}
+
+void CommandHandler::stopScheduler() {
+    if (!scheduler) {
+        std::cout << "[No scheduler running]\n";
+        return;
+    }
+    batchingEnabled = false;
+    if (batcherThread.joinable()) batcherThread.join();
+    scheduler->stop();
+    std::cout << "[Scheduler stopped]\n";
+
 }
 
 void CommandHandler::showScreenList() {
@@ -176,18 +209,27 @@ void CommandHandler::newProcess(const std::string& name) {
         return;
     }
 
-    // Check if process already exists
     ProcessInfo* info = scheduler->getProcessInfoByName(name);
     if (info && !info->finished) {
         std::cout << "Process " << name << " is already running.\n";
         return;
     }
 
-    // Create new process, add to scheduler, and start interaction
+    // Create new process and add to scheduler
     Process* proc = new Process(name);
+    Config config = ConfigHandler::loadFromFile("config.txt");
+    proc->generateRandomInstructions(config.minInstructions, config.maxInstructions);
     scheduler->addProcess(proc);
 
+    // Create screen
+    Screen screen(name);
+    screen.setTotalLines(proc->totalCommands);
+    screen.setCurrentLine(0);  // New process, line is 0
+    (*screenMap)[name] = screen;
+
     system("cls");
+    screen.displayScreen();
+
     lastScreenedProcessName = name;
 
     std::string cmd;
@@ -210,6 +252,7 @@ void CommandHandler::newProcess(const std::string& name) {
     }
 }
 
+
 void CommandHandler::showProcessScreen(const std::string& name) {
     if (!scheduler) return;
 
@@ -220,6 +263,14 @@ void CommandHandler::showProcessScreen(const std::string& name) {
     }
 
     system("cls");
+
+    // Update and show screen
+    Screen screen(name);
+    screen.setCurrentLine(info->progress);
+    screen.setTotalLines(info->total);
+    (*screenMap)[name] = screen;
+
+    screen.displayScreen();
     lastScreenedProcessName = name;
 
     std::string cmd;

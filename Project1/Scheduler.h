@@ -36,7 +36,7 @@ private:
 public:
     Scheduler(int coreCount_, SchedulingAlgorithm algo, int quantum = 1);
     ~Scheduler();
-
+    void stop();  // Graceful shutdown
     void start();
     void addProcess(Process* p);
     void worker(int coreId);

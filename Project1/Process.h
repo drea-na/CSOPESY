@@ -49,6 +49,8 @@ public:
 
 private:
     void setVariable(const std::string& var, int value);
+    int getValueFromArg(const std::string& arg);
+
 };
 
 #endif

@@ -1,6 +1,6 @@
 #ifndef COMMANDHANDLER_H
 #define COMMANDHANDLER_H
-
+#include <thread>
 #include <string>
 #include <map>
 #include "Scheduler.h"
@@ -22,9 +22,12 @@ private:
     static void doInitialize();
     static void startScheduler();
     static void showScreenList();
+    static void stopScheduler();
 
     // NEW: Create a new process screen
     static void newProcess(const std::string& name);
+    static std::thread batcherThread;
+    static std::atomic<bool> batchingEnabled;
 
     // NEW: Show existing process screen
     static void showProcessScreen(const std::string& name);

@@ -12,6 +12,9 @@ int main() {
     CommandHandler::initialize(screens, scheduler);
     CommandHandler::handle();
 
-    delete scheduler;
+    if (scheduler) {
+        scheduler->stop();  // <-- Gracefully stop threads
+        delete scheduler;
+    }
     return 0;
 }

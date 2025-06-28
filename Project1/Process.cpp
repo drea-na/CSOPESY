@@ -4,7 +4,7 @@
 #include <iomanip>
 #include <random>
 #include <thread>
-#include <functional> // required for std::function
+#include <functional>
 
 Process::Process(const std::string& processName) : name(processName) {
     logFile.open(name + ".txt", std::ios::out);
@@ -23,6 +23,16 @@ void Process::setVariable(const std::string& var, int value) {
     if (value < 0) value = 0;
     if (value > 65535) value = 65535;
     variables[var] = static_cast<uint16_t>(value);
+}
+
+int Process::getValueFromArg(const std::string& arg) {
+    if (variables.count(arg)) return variables[arg];
+    try {
+        return std::stoi(arg);
+    }
+    catch (...) {
+        return 0; // fallback if not a number
+    }
 }
 
 bool Process::executeNextInstruction(int coreId, int& cpuTick) {
@@ -55,7 +65,7 @@ bool Process::executeNextInstruction(int coreId, int& cpuTick) {
     }
     case InstrType::DECLARE: {
         if (instr.args.size() >= 2) {
-            setVariable(instr.args[0], std::stoi(instr.args[1]));
+            setVariable(instr.args[0], getValueFromArg(instr.args[1]));
         }
         break;
     }
@@ -63,8 +73,8 @@ bool Process::executeNextInstruction(int coreId, int& cpuTick) {
     case InstrType::SUBTRACT: {
         if (instr.args.size() >= 3) {
             std::string var1 = instr.args[0];
-            int v2 = variables.count(instr.args[1]) ? variables[instr.args[1]] : std::stoi(instr.args[1]);
-            int v3 = variables.count(instr.args[2]) ? variables[instr.args[2]] : std::stoi(instr.args[2]);
+            int v2 = getValueFromArg(instr.args[1]);
+            int v3 = getValueFromArg(instr.args[2]);
             int result = (instr.type == InstrType::ADD) ? v2 + v3 : v2 - v3;
             setVariable(var1, result);
         }
@@ -72,7 +82,7 @@ bool Process::executeNextInstruction(int coreId, int& cpuTick) {
     }
     case InstrType::SLEEP: {
         if (!instr.args.empty()) {
-            int ticks = std::stoi(instr.args[0]);
+            int ticks = getValueFromArg(instr.args[0]);
             if (ticks > 0) sleepTicks = ticks - 1;
         }
         break;
@@ -163,5 +173,4 @@ void Process::generateRandomInstructions(int minIns, int maxIns) {
     sleepTicks = 0;
 
     logFile.open(name + ".txt", std::ios::out | std::ios::trunc);
-
 }

@@ -120,3 +120,13 @@ ProcessInfo* Scheduler::getProcessInfoByName(const std::string& name) {
     }
     return nullptr;
 }
+
+void Scheduler::stop() {
+    stopFlag = true;
+    cv.notify_all();
+    for (auto& t : workerThreads) {
+        if (t.joinable()) t.join();
+    }
+    workerThreads.clear();
+    started = false;  // <--- Add this line to allow restart
+}
