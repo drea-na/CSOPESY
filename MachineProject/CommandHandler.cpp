@@ -167,7 +167,7 @@ void CommandHandler::screenS(const std::string& name) {
         return;
     }
     
-    // Validate process name (basic validation)
+    // Validate process name
     if (name.find_first_of("\\/:*?\"<>|") != std::string::npos) {
         std::cout << "Error: Invalid process name. Cannot contain \\/:*?\"<>|" << std::endl;
         printEnter();
@@ -253,7 +253,7 @@ void CommandHandler::screenR(const std::string& name) {
         return;
     }
     
-    // Validate process name (basic validation)
+    // Validate process name
     if (name.find_first_of("\\/:*?\"<>|") != std::string::npos) {
         std::cout << "Error: Invalid process name. Cannot contain \\/:*?\"<>|" << std::endl;
         printEnter();
@@ -314,15 +314,14 @@ void CommandHandler::screenR(const std::string& name) {
 }
 
 void CommandHandler::reportUtil() {
-    // Calculate utilization based on current state rather than cumulative values
+    // Calculate utilization based on current state
     double utilization = 0.0;
     int used = coresUsed.load();
     
-    // If cores are currently being used, utilization should be based on that
     if (used > 0) {
         utilization = (double)used / global_core_count * 100.0;
     } else {
-        // If no cores are used, utilization should be 0%
+        // If no cores are used, utilization 0%
         utilization = 0.0;
     }
 

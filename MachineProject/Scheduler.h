@@ -24,7 +24,7 @@ enum class SchedulingAlgorithm {
 
 class Scheduler {
 private:
-    std::deque<Process*> processQueue; // Use deque for RR pop/push
+    std::deque<Process*> processQueue; // deque for RR pop/push
     std::mutex queueMutex;
     std::condition_variable cv;
     std::atomic<bool> stopFlag = false;
@@ -39,7 +39,6 @@ private:
 public:
     Scheduler(int coreCount_, SchedulingAlgorithm algo, int quantum = 1)
         : coreCount(coreCount_), algorithm(algo), quantumCycles(quantum) {
-        // Don't start worker threads immediately
     }
 
     void start() {

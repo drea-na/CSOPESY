@@ -42,7 +42,7 @@ std::atomic<int> activeCpuCycles(0);
 std::thread processGeneratorThread;
 std::atomic<bool> generatorRunning(false);
 
-// Add a global process ID counter
+// global process ID counter
 int nextProcessId = 0;
 
 // Read config.txt
@@ -119,22 +119,21 @@ void generateDummyProcess(const std::string& name) {
             processList.push_back(info);
         }
     } else {
-        delete p; // Clean up if no scheduler available
+        delete p;
     }
 }
 
 void showProcessList() {
     std::lock_guard<std::mutex> lock(processMutex);
 
-    // Calculate utilization based on current state rather than cumulative values
     double utilization = 0.0;
     int used = coresUsed.load();
     
-    // If cores are currently being used, utilization should be based on that
+    
     if (used > 0) {
         utilization = (double)used / global_core_count * 100.0;
     } else {
-        // If no cores are used, utilization should be 0%
+        // If no cores are used, utilization 0%
         utilization = 0.0;
     }
 
