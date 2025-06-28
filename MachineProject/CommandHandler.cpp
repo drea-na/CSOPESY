@@ -151,6 +151,8 @@ void CommandHandler::schedulerStop() {
     delete scheduler;
     scheduler = nullptr;
 
+    coresUsed.store(0);
+
     std::cout << "Scheduler stopped." << std::endl;
     printEnter();
 }
