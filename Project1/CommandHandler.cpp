@@ -8,6 +8,7 @@
 #include <thread>
 #include <chrono>
 #include <ctime>
+#include <set>
 
 std::map<std::string, Screen>* CommandHandler::screenMap = nullptr;
 Scheduler* CommandHandler::scheduler = nullptr;
@@ -22,6 +23,7 @@ static std::string trim(const std::string& s) {
     size_t end = s.find_last_not_of(' ');
     return s.substr(start, end - start + 1);
 }
+
 // === Initialization ===
 void CommandHandler::initialize(std::map<std::string, Screen>& screenMapRef, Scheduler*& schedulerRef) {
     screenMap = &screenMapRef;
@@ -29,7 +31,6 @@ void CommandHandler::initialize(std::map<std::string, Screen>& screenMapRef, Sch
     drawHeader();
     prompt();
 }
-
 
 // === Input Loop ===
 void CommandHandler::handle() {
@@ -43,7 +44,6 @@ void CommandHandler::handle() {
             std::cout << "Shutting Down...\n";
             break;
         }
-
 
         if (!initialized) {
             if (input == "initialize") {
@@ -228,22 +228,24 @@ void CommandHandler::showScreenList() {
         return;
     }
 
-    int totalCores = scheduler->getCoreCount(); // assuming this exists
+    int totalCores = scheduler->getCoreCount();
     auto processList = scheduler->getProcessList();
 
-    int usedCores = 0;
-    int finished = 0;
-
+    std::set<int> usedCoresSet;
     for (const auto& p : processList) {
-        if (!p.finished) usedCores++;
-        else finished++;
+        if (!p.finished && p.coreID >= 0) {
+            usedCoresSet.insert(p.coreID);
+        }
     }
 
-    int utilization = static_cast<int>((usedCores / (float)totalCores) * 100);
+    int usedCores = static_cast<int>(usedCoresSet.size());
+    int availableCores = std::max(0, totalCores - usedCores);
+    float utilization = (totalCores == 0) ? 0 : ((float)usedCores / totalCores) * 100;
 
+    std::cout << std::fixed << std::setprecision(1);
     std::cout << "CPU utilization: " << utilization << "%\n";
     std::cout << "Cores used: " << usedCores << "\n";
-    std::cout << "Cores available: " << (totalCores - usedCores) << "\n";
+    std::cout << "Cores available: " << availableCores << "\n";
     std::cout << "----------------------------\n";
 
     std::cout << "Running processes:\n";
@@ -270,9 +272,11 @@ void CommandHandler::printProcessLine(const ProcessInfo& p) {
     char timestamp[32];
     std::strftime(timestamp, sizeof(timestamp), "(%m/%d/%Y %I:%M:%S%p)", &tm);
 
-    std::cout << p.name << " " << timestamp << " Core:" << p.coreID
+    std::string coreStr = (p.coreID == -1) ? "N/A" : std::to_string(p.coreID);
+    std::cout << p.name << " " << timestamp << " Core:" << coreStr
         << " " << p.progress << "/" << p.total << "\n";
 }
+
 
 
 void CommandHandler::newProcess(const std::string& name) {
@@ -410,7 +414,8 @@ void CommandHandler::logProcessLine(std::ofstream& log, const ProcessInfo& p) {
     char timestamp[32];
     std::strftime(timestamp, sizeof(timestamp), "(%m/%d/%Y %I:%M:%S%p)", &tm);
 
-    log << p.name << " " << timestamp << " Core:" << p.coreID
+    std::string coreStr = (p.coreID == -1) ? "N/A" : std::to_string(p.coreID);
+    log << p.name << " " << timestamp << " Core:" << coreStr
         << " " << p.progress << "/" << p.total << "\n";
 }
 
@@ -429,6 +434,7 @@ void CommandHandler::showProcessSMI() {
 
         std::ifstream logFile(info->name + ".txt");
         std::string line;
+
         if (logFile.is_open()) {
             while (std::getline(logFile, line)) {
                 auto now = std::chrono::system_clock::now();
@@ -438,7 +444,9 @@ void CommandHandler::showProcessSMI() {
 
                 char timestamp[32];
                 std::strftime(timestamp, sizeof(timestamp), "(%m/%d/%Y %I:%M:%S%p)", &tm);
-                std::cout << timestamp << " Core:" << info->coreID << " \"" << line << "\"\n";
+
+                std::string coreStr = (info->coreID == -1) ? "N/A" : std::to_string(info->coreID);
+                std::cout << timestamp << " Core:" << coreStr << " \"" << line << "\"\n";
             }
         }
         else {
@@ -447,10 +455,10 @@ void CommandHandler::showProcessSMI() {
 
         std::cout << "Instruction line: " << info->progress << "\n";
         std::cout << "Lines of code: " << info->total << "\n";
-        if (info->finished)
-            std::cout << "Finished!\n";
+        if (info->finished) std::cout << "Finished!\n";
     }
     else {
         std::cout << "No active screen process.\n";
     }
 }
+
