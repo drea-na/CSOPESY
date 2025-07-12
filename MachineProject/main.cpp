@@ -12,6 +12,7 @@
 #include "Console.h"
 #include "Scheduler.h"
 #include "CommandHandler.h"
+#include "MemoryManager.h"
 
 // Declare the screenMap variable
 std::map<std::string, Console> screenMap;
@@ -35,6 +36,12 @@ int global_min_ins = 1000;
 int global_max_ins = 2000;
 int global_delay_per_exec = 0;
 
+// Memory manager globals
+MemoryManager* memoryManager = nullptr;
+int global_max_overall_mem = 16384;
+int global_mem_per_frame = 16;
+int global_mem_per_proc = 4096;
+
 std::atomic<int> coresUsed(0);
 std::atomic<int> totalCpuCycles(0);
 std::atomic<int> activeCpuCycles(0);
@@ -52,7 +59,7 @@ void readConfig() {
         std::cout << "config.txt not found. Using defaults." << std::endl;
         return;
     }
-    
+
     try {
         std::string key;
         while (fin >> key) {
@@ -67,13 +74,17 @@ void readConfig() {
             else if (key == "min-ins") fin >> global_min_ins;
             else if (key == "max-ins") fin >> global_max_ins;
             else if (key == "delay-per-exec") fin >> global_delay_per_exec;
+            else if (key == "max-overall-mem") fin >> global_max_overall_mem;
+            else if (key == "mem-per-frame") fin >> global_mem_per_frame;
+            else if (key == "mem-per-proc") fin >> global_mem_per_proc;
             // Add more config as needed
             else fin.ignore(1000, '\n');
         }
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception& e) {
         std::cout << "Error reading config.txt: " << e.what() << ". Using defaults." << std::endl;
     }
-    
+
     // Validation
     if (global_core_count < 1 || global_core_count > 128) {
         std::cout << "[config.txt] num-cpu out of range (1-128). Using default (4)." << std::endl;
@@ -99,6 +110,18 @@ void readConfig() {
         std::cout << "[config.txt] delay-per-exec out of range (>=0). Using default (0)." << std::endl;
         global_delay_per_exec = 0;
     }
+    if (global_max_overall_mem < 1) {
+        std::cout << "[config.txt] max-overall-mem out of range (>=1). Using default (16384)." << std::endl;
+        global_max_overall_mem = 16384;
+    }
+    if (global_mem_per_frame < 1) {
+        std::cout << "[config.txt] mem-per-frame out of range (>=1). Using default (16)." << std::endl;
+        global_mem_per_frame = 16;
+    }
+    if (global_mem_per_proc < 1) {
+        std::cout << "[config.txt] mem-per-proc out of range (>=1). Using default (4096)." << std::endl;
+        global_mem_per_proc = 4096;
+    }
 }
 
 void generateDummyProcess(const std::string& name) {
@@ -118,7 +141,8 @@ void generateDummyProcess(const std::string& name) {
             info.finished = false;
             processList.push_back(info);
         }
-    } else {
+    }
+    else {
         delete p;
     }
 }
@@ -128,11 +152,12 @@ void showProcessList() {
 
     double utilization = 0.0;
     int used = coresUsed.load();
-    
-    
+
+
     if (used > 0) {
         utilization = (double)used / global_core_count * 100.0;
-    } else {
+    }
+    else {
         // If no cores are used, utilization 0%
         utilization = 0.0;
     }
@@ -143,6 +168,21 @@ void showProcessList() {
     std::cout << "Cores used: " << used << std::endl;
     std::cout << "Cores available: " << available << std::endl;
 
+    // Display memory information
+    if (memoryManager) {
+        int processesInMemory = memoryManager->getNumberOfProcessesInMemory();
+        int fragmentationBytes = memoryManager->getTotalExternalFragmentation();
+        double fragmentationKB = fragmentationBytes / 1024.0;
+
+        std::cout << "Processes in memory: " << processesInMemory << std::endl;
+        std::cout << "External fragmentation: " << std::fixed << std::setprecision(2) << fragmentationKB << " KB" << std::endl;
+
+        if (scheduler) {
+            int waitingProcesses = scheduler->getWaitingQueueSize();
+            std::cout << "Processes waiting for memory: " << waitingProcesses << std::endl;
+        }
+    }
+
     std::cout << "\n-------------------------------" << std::endl;
     std::cout << "Running processes:\n";
 
@@ -151,7 +191,8 @@ void showProcessList() {
             std::cout << p.name << "\t(" << p.startTime << ")";
             if (p.coreID == -1) {
                 std::cout << "  Core: N/A";
-            } else {
+            }
+            else {
                 std::cout << "  Core: " << p.coreID;
             }
             std::cout << "  " << p.progress << " / " << p.total << std::endl;
@@ -171,6 +212,12 @@ void showProcessList() {
 
 
 int main() {
+    // Read configuration
+    readConfig();
+
+    // Initialize memory manager
+    memoryManager = new MemoryManager(global_max_overall_mem, global_mem_per_frame, global_mem_per_proc);
+
     CommandHandler handler(screenMap, scheduler);
     bool running = true;
     std::string command;
@@ -182,8 +229,10 @@ int main() {
         if (command == "exit") {
             std::cout << "Shutting down... bye bye" << std::endl;
             if (scheduler) delete scheduler;
+            if (memoryManager) delete memoryManager;
             running = false;
-        } else {
+        }
+        else {
             handler.handleCommands(command);
         }
         cpuCycles++;

@@ -30,6 +30,8 @@ extern int global_batch_process_freq;
 extern std::atomic<int> coresUsed;
 extern std::atomic<int> totalCpuCycles;
 extern std::atomic<int> activeCpuCycles;
+extern MemoryManager* memoryManager;
+extern int global_mem_per_proc;
 
 //external declarations
 extern void readConfig();
@@ -86,10 +88,11 @@ void CommandHandler::initialize() {
         delete scheduler;
     }
 
-    scheduler = new Scheduler(global_core_count, global_algo, global_quantum);
+    scheduler = new Scheduler(global_core_count, global_algo, memoryManager, global_mem_per_proc, global_quantum);
     std::cout << "Scheduler initialized: ";
     std::cout << (global_algo == SchedulingAlgorithm::FCFS ? "FCFS" : "RR");
     std::cout << ", cores: " << global_core_count << ", quantum: " << global_quantum << std::endl;
+    std::cout << "Memory manager: " << global_mem_per_proc << " bytes per process" << std::endl;
     initialized = true;
     printEnter();
 }
@@ -106,22 +109,22 @@ void CommandHandler::schedulerStart() {
 
     for (int i = 1; i <= 10; ++i) {
         char buf[16];
-        snprintf(buf, sizeof(buf), "process%02d", i);
+        snprintf(buf, sizeof(buf), "P%d", i);
         generateDummyProcess(buf);
     }
 
     if (!generatorRunning) {
         generatorRunning = true;
-        processGeneratorThread = std::thread ([this]() {
+        processGeneratorThread = std::thread([this]() {
             int processCount = 11;
             while (generatorRunning && schedulerRunning) {
                 char buf[16];
-                snprintf(buf, sizeof(buf), "process%02d", processCount);
+                snprintf(buf, sizeof(buf), "P%d", processCount);
                 generateDummyProcess(buf);
                 processCount++;
                 std::this_thread::sleep_for(std::chrono::seconds(global_batch_process_freq));
             }
-        });
+            });
     }
 
     std::cout << "Scheduler started. Processes will be generated every " << global_batch_process_freq << " seconds." << std::endl;
@@ -168,38 +171,40 @@ void CommandHandler::screenS(const std::string& name) {
         printEnter();
         return;
     }
-    
+
     // Validate process name
     if (name.find_first_of("\\/:*?\"<>|") != std::string::npos) {
         std::cout << "Error: Invalid process name. Cannot contain \\/:*?\"<>|" << std::endl;
         printEnter();
         return;
     }
-    
+
     // Check if process exists; if not, create it
-    auto it = std::find_if(processList.begin(), processList.end(), [&](const ProcessInfo& p){ return p.name == name; });
+    auto it = std::find_if(processList.begin(), processList.end(), [&](const ProcessInfo& p) { return p.name == name; });
     if (it == processList.end()) {
         try {
             generateDummyProcess(name);
             std::cout << "Process '" << name << "' created successfully." << std::endl;
-        } catch (const std::exception& e) {
+        }
+        catch (const std::exception& e) {
             std::cout << "Error creating process '" << name << "': " << e.what() << std::endl;
             printEnter();
             return;
         }
     }
-    
+
     if (screenMap.count(name)) {
         std::cout << "Screen '" << name << "' already exists." << std::endl;
-    } else {
+    }
+    else {
         screenMap[name] = Console(name);
         std::cout << "Created screen: " << name << std::endl;
     }
-    
+
     bool inScreen = true;
     system("cls");
     // Display process info and logs
-    it = std::find_if(processList.begin(), processList.end(), [&](const ProcessInfo& p){ return p.name == name; });
+    it = std::find_if(processList.begin(), processList.end(), [&](const ProcessInfo& p) { return p.name == name; });
     if (it != processList.end()) {
         std::cout << "\n=== Screen for Process: " << it->name << " ===" << std::endl;
         std::cout << "Process ID: " << it->id << std::endl;
@@ -212,16 +217,18 @@ void CommandHandler::screenS(const std::string& name) {
             std::string line;
             while (std::getline(logFile, line)) lines.push_back(line);
             std::cout << "--- Last 10 PRINT logs ---" << std::endl;
-            for (int i = std::max(0, (int)lines.size()-10); i < (int)lines.size(); ++i) {
+            for (int i = std::max(0, (int)lines.size() - 10); i < (int)lines.size(); ++i) {
                 std::cout << lines[i] << std::endl;
             }
-        } else {
+        }
+        else {
             std::cout << "--- No PRINT logs yet ---" << std::endl;
         }
-    } else {
+    }
+    else {
         std::cout << "Process " << name << " not found" << std::endl;
     }
-    
+
     while (inScreen) {
         printEnter();
         std::string input;
@@ -230,10 +237,12 @@ void CommandHandler::screenS(const std::string& name) {
             inScreen = false;
             system("cls");
             printHeader();
-        } else if (input == "process-smi") {
+        }
+        else if (input == "process-smi") {
             inScreen = true;
             processSmi(name);
-        } else {
+        }
+        else {
             std::cout << "Unknown command in screen '" << name << "'. Type 'exit' to leave the screen." << std::endl;
         }
     }
@@ -245,21 +254,21 @@ void CommandHandler::screenR(const std::string& name) {
         printEnter();
         return;
     }
-    
+
     // Validate process name
     if (name.find_first_of("\\/:*?\"<>|") != std::string::npos) {
         std::cout << "Error: Invalid process name. Cannot contain \\/:*?\"<>|" << std::endl;
         printEnter();
         return;
     }
-    
-    auto it = std::find_if(processList.begin(), processList.end(), [&](const ProcessInfo& p){ return p.name == name && !p.finished; });
+
+    auto it = std::find_if(processList.begin(), processList.end(), [&](const ProcessInfo& p) { return p.name == name && !p.finished; });
     if (it == processList.end()) {
         std::cout << "Process " << name << " not found or already finished" << std::endl;
         printEnter();
         return;
     }
-    
+
     bool inScreen = true;
     system("cls");
     std::cout << "\n=== Screen for Process: " << it->name << " ===" << std::endl;
@@ -273,13 +282,14 @@ void CommandHandler::screenR(const std::string& name) {
         std::string line;
         while (std::getline(logFile, line)) lines.push_back(line);
         std::cout << "--- Last 10 PRINT logs ---" << std::endl;
-        for (int i = std::max(0, (int)lines.size()-10); i < (int)lines.size(); ++i) {
+        for (int i = std::max(0, (int)lines.size() - 10); i < (int)lines.size(); ++i) {
             std::cout << lines[i] << std::endl;
         }
-    } else {
+    }
+    else {
         std::cout << "--- No PRINT logs yet ---" << std::endl;
     }
-    
+
     while (inScreen) {
         printEnter();
         std::string input;
@@ -288,10 +298,12 @@ void CommandHandler::screenR(const std::string& name) {
             inScreen = false;
             system("cls");
             printHeader();
-        } else if (input == "process-smi") {
+        }
+        else if (input == "process-smi") {
             inScreen = true;
             processSmi(name);
-        } else {
+        }
+        else {
             std::cout << "Unknown command in screen '" << name << "'. Type 'exit' to leave the screen." << std::endl;
         }
     }
@@ -301,10 +313,11 @@ void CommandHandler::reportUtil() {
     // Calculate utilization based on current state
     double utilization = 0.0;
     int used = coresUsed.load();
-    
+
     if (used > 0) {
         utilization = (double)used / global_core_count * 100.0;
-    } else {
+    }
+    else {
         // If no cores are used, utilization 0%
         utilization = 0.0;
     }
@@ -337,7 +350,8 @@ void CommandHandler::reportUtil() {
                 reportFile << p.name << "\t(" << p.startTime << ")";
                 if (p.coreID == -1) {
                     reportFile << "  Core: N/A";
-                } else {
+                }
+                else {
                     reportFile << "  Core: " << p.coreID;
                 }
                 reportFile << "  " << p.progress << " / " << p.total << std::endl;
@@ -362,14 +376,14 @@ void CommandHandler::reportUtil() {
 
 void CommandHandler::processSmi(const std::string& processName) {
     // Find the process in the process list
-    auto it = std::find_if(processList.begin(), processList.end(), 
-                          [&](const ProcessInfo& p){ return p.name == processName; });
-    
+    auto it = std::find_if(processList.begin(), processList.end(),
+        [&](const ProcessInfo& p) { return p.name == processName; });
+
     if (it != processList.end()) {
         std::cout << "\nProcess name: " << it->name << std::endl;
         std::cout << "ID: " << it->id << std::endl;
         std::cout << "Logs:" << std::endl;
-        
+
         // Read and display the last log entry
         std::ifstream logFile("process_logs/" + it->name + ".txt");
         if (logFile) {
@@ -383,14 +397,15 @@ void CommandHandler::processSmi(const std::string& processName) {
                 std::cout << lines.back() << std::endl;
             }
         }
-        
+
         std::cout << "Current instruction line: " << it->progress << std::endl;
         std::cout << "Lines of code: " << it->total << std::endl;
-        
+
         if (it->finished) {
             std::cout << "Finished!" << std::endl;
         }
-    } else {
+    }
+    else {
         std::cout << "Process not found in process list." << std::endl;
     }
 }
