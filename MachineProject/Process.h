@@ -220,7 +220,7 @@ inline bool Process::executeNextInstruction(int coreId) {
             break;
         }
         case InstrType::READ: {
-            if (instr.args.size() >= 2 && memoryManager) {
+            if (instr.args.size() >= 2 && memoryManager != nullptr) {
                 try {
                     std::string varName = instr.args[0];
                     uint32_t address = std::stoul(instr.args[1], nullptr, 16); // Parse hex address
@@ -232,11 +232,15 @@ inline bool Process::executeNextInstruction(int coreId) {
                     isFinished = true;
                     return false;
                 }
+            } else {
+                logMessage("Memory manager not available for READ operation", coreId);
+                isFinished = true;
+                return false;
             }
             break;
         }
         case InstrType::WRITE: {
-            if (instr.args.size() >= 2 && memoryManager) {
+            if (instr.args.size() >= 2 && memoryManager != nullptr) {
                 try {
                     uint32_t address = std::stoul(instr.args[0], nullptr, 16); // Parse hex address
                     uint16_t value = std::stoul(instr.args[1]);
@@ -252,6 +256,10 @@ inline bool Process::executeNextInstruction(int coreId) {
                     isFinished = true;
                     return false;
                 }
+            } else {
+                logMessage("Memory manager not available for WRITE operation", coreId);
+                isFinished = true;
+                return false;
             }
             break;
         }

@@ -61,6 +61,7 @@ public:
     }
 
     void addProcess(Process* p) {
+        if (!p) return; // Don't add null processes
         std::lock_guard<std::mutex> lock(queueMutex);
         processQueue.push_back(p);
         cv.notify_one();
@@ -86,8 +87,13 @@ public:
                     p = processQueue.front();
                     processQueue.pop_front();
                 }
+                
+                // Check if the process pointer is valid
+                if (!p) {
+                    totalCpuCycles++;
+                    continue;
+                }
             }
-            if (!p) continue;
 
             coresUsed++;
 
@@ -139,7 +145,7 @@ public:
                         }
                     }
                     // If not finished, requeue
-                    if (p->executedCommands < p->totalCommands && running) {
+                    if (p && p->executedCommands < p->totalCommands && running) {
                         std::lock_guard<std::mutex> lock(queueMutex);
                         processQueue.push_back(p);
                         cv.notify_one();
@@ -159,7 +165,9 @@ public:
             }
             
             coresUsed--;
-            delete p;
+            if (p) {
+                delete p;
+            }
         }
     }
 

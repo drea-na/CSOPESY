@@ -6,8 +6,8 @@
 #include <cmath>
 
 MemoryManager::MemoryManager(int maxMem, int frameSize, int minProcMem, int maxProcMem)
-    : maxOverallMemory(maxMem), memoryPerFrame(frameSize), 
-      minMemoryPerProcess(minProcMem), maxMemoryPerProcess(maxProcMem),
+    : maxOverallMemory(maxMem * 1024), memoryPerFrame(frameSize * 1024), 
+      minMemoryPerProcess(minProcMem * 1024), maxMemoryPerProcess(maxProcMem * 1024),
       pagesPagedIn(0), pagesPagedOut(0), totalMemoryUsed(0) {
     
     // Calculate total frames
@@ -112,6 +112,11 @@ uint16_t MemoryManager::readMemory(int processId, uint32_t address) {
     int pageNumber = address / memoryPerFrame;
     int offset = (address % memoryPerFrame) / 2; // Divide by 2 since each element is 2 bytes
     
+    // Check if page number is within bounds
+    if (pageNumber >= procMem.pageTable.size()) {
+        throw std::runtime_error("Memory access violation: page number out of bounds");
+    }
+    
     // Check if page is in memory
     if (procMem.pageTable[pageNumber] == -1) {
         // Page fault - handle it
@@ -121,6 +126,17 @@ uint16_t MemoryManager::readMemory(int processId, uint32_t address) {
     }
     
     int frameIndex = procMem.pageTable[pageNumber];
+    
+    // Check if frame index is valid
+    if (frameIndex < 0 || frameIndex >= physicalMemory.size()) {
+        throw std::runtime_error("Memory access violation: invalid frame index");
+    }
+    
+    // Check if offset is within bounds
+    if (offset < 0 || offset >= 256) { // Assuming 256 uint16_t elements per frame
+        throw std::runtime_error("Memory access violation: offset out of bounds");
+    }
+    
     return physicalMemory[frameIndex].data[offset];
 }
 
@@ -143,6 +159,11 @@ bool MemoryManager::writeMemory(int processId, uint32_t address, uint16_t value)
     int pageNumber = address / memoryPerFrame;
     int offset = (address % memoryPerFrame) / 2;
     
+    // Check if page number is within bounds
+    if (pageNumber >= procMem.pageTable.size()) {
+        return false;
+    }
+    
     // Check if page is in memory
     if (procMem.pageTable[pageNumber] == -1) {
         // Page fault - handle it
@@ -152,6 +173,17 @@ bool MemoryManager::writeMemory(int processId, uint32_t address, uint16_t value)
     }
     
     int frameIndex = procMem.pageTable[pageNumber];
+    
+    // Check if frame index is valid
+    if (frameIndex < 0 || frameIndex >= physicalMemory.size()) {
+        return false;
+    }
+    
+    // Check if offset is within bounds
+    if (offset < 0 || offset >= 256) { // Assuming 256 uint16_t elements per frame
+        return false;
+    }
+    
     physicalMemory[frameIndex].data[offset] = value;
     physicalMemory[frameIndex].isDirty = true;
     
@@ -164,6 +196,11 @@ bool MemoryManager::handlePageFault(int processId, int pageNumber) {
     
     ProcessMemory& procMem = it->second;
     
+    // Check if page number is within bounds
+    if (pageNumber >= procMem.pageTable.size()) {
+        return false;
+    }
+    
     // Find a free frame
     int frameIndex = -1;
     if (!freeFrames.empty()) {
@@ -173,6 +210,11 @@ bool MemoryManager::handlePageFault(int processId, int pageNumber) {
         // No free frames, need to evict
         frameIndex = findVictimFrame();
         if (frameIndex == -1) return false;
+        
+        // Check if frame index is valid
+        if (frameIndex < 0 || frameIndex >= physicalMemory.size()) {
+            return false;
+        }
         
         // Save current frame to backing store if dirty
         if (physicalMemory[frameIndex].isDirty) {
@@ -184,7 +226,10 @@ bool MemoryManager::handlePageFault(int processId, int pageNumber) {
         // Update page table of evicted process
         auto evictedIt = processes.find(physicalMemory[frameIndex].processId);
         if (evictedIt != processes.end()) {
-            evictedIt->second.pageTable[physicalMemory[frameIndex].pageNumber] = -1;
+            int evictedPageNumber = physicalMemory[frameIndex].pageNumber;
+            if (evictedPageNumber >= 0 && evictedPageNumber < evictedIt->second.pageTable.size()) {
+                evictedIt->second.pageTable[evictedPageNumber] = -1;
+            }
             // Update total memory used when a page is evicted
             totalMemoryUsed -= memoryPerFrame;
         }
@@ -305,9 +350,9 @@ void MemoryManager::printProcessSmi() {
     std::lock_guard<std::mutex> lock(memoryMutex);
     
     std::cout << "\n=== CSOPESY Memory Summary (process-smi) ===" << std::endl;
-    std::cout << "Total Memory: " << maxOverallMemory << " bytes" << std::endl;
-    std::cout << "Used Memory: " << totalMemoryUsed << " bytes" << std::endl;
-    std::cout << "Free Memory: " << (maxOverallMemory - totalMemoryUsed) << " bytes" << std::endl;
+    std::cout << "Total Memory: " << (maxOverallMemory / 1024) << " KB" << std::endl;
+    std::cout << "Used Memory: " << (totalMemoryUsed / 1024) << " KB" << std::endl;
+    std::cout << "Free Memory: " << ((maxOverallMemory - totalMemoryUsed) / 1024) << " KB" << std::endl;
     std::cout << "Memory Utilization: " << std::fixed << std::setprecision(2) 
               << (double)totalMemoryUsed / maxOverallMemory * 100.0 << "%" << std::endl;
     
@@ -324,7 +369,7 @@ void MemoryManager::printProcessSmi() {
         }
         
         std::cout << std::setw(15) << proc.processName 
-                  << std::setw(10) << proc.totalMemory << " bytes"
+                  << std::setw(10) << (proc.totalMemory / 1024) << " KB"
                   << std::setw(10) << pagesInMemory << "/" << proc.pageTable.size()
                   << std::setw(10) << (proc.isActive ? "Active" : "Inactive") << std::endl;
     }
@@ -335,9 +380,9 @@ void MemoryManager::printVmstat() {
     
     std::cout << "\n=== CSOPESY Virtual Memory Statistics (vmstat) ===" << std::endl;
     std::cout << "Memory Statistics:" << std::endl;
-    std::cout << "  Total Memory: " << maxOverallMemory << " bytes" << std::endl;
-    std::cout << "  Used Memory: " << totalMemoryUsed << " bytes" << std::endl;
-    std::cout << "  Free Memory: " << (maxOverallMemory - totalMemoryUsed) << " bytes" << std::endl;
+    std::cout << "  Total Memory: " << (maxOverallMemory / 1024) << " KB" << std::endl;
+    std::cout << "  Used Memory: " << (totalMemoryUsed / 1024) << " KB" << std::endl;
+    std::cout << "  Free Memory: " << ((maxOverallMemory - totalMemoryUsed) / 1024) << " KB" << std::endl;
     
     std::cout << "\nPage Statistics:" << std::endl;
     std::cout << "  Total Frames: " << totalFrames << std::endl;

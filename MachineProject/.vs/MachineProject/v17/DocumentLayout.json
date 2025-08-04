@@ -3,6 +3,13 @@
   "WorkspaceRootPath": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\include\\utility||{3B902123-F8A7-4915-9F01-361F908088D0}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\Scheduler.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:Scheduler.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\CommandHandler.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:CommandHandler.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
@@ -23,10 +30,6 @@
       "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:Process.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\Scheduler.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:Scheduler.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     }
@@ -38,11 +41,22 @@
       "DocumentGroups": [
         {
           "DockedWidth": 232,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
+              "Title": "utility",
+              "DocumentMoniker": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\include\\utility",
+              "ToolTip": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\include\\utility",
+              "ViewState": "AgIAAPYCAAAAAAAAAAAYwAQDAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2025-08-04T16:57:44.535Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
               "Title": "CommandHandler.h",
               "DocumentMoniker": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\CommandHandler.h",
               "RelativeDocumentMoniker": "CommandHandler.h",
@@ -55,20 +69,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 2,
               "Title": "CommandHandler.cpp",
               "DocumentMoniker": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\CommandHandler.cpp",
               "RelativeDocumentMoniker": "CommandHandler.cpp",
               "ToolTip": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\CommandHandler.cpp",
               "RelativeToolTip": "CommandHandler.cpp",
-              "ViewState": "AgIAABUAAAAAAAAAAAAAAHsBAAArAAAAAAAAAA==",
+              "ViewState": "AgIAAEUAAAAAAAAAAAAAAHsBAAArAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2025-06-27T02:49:40.803Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 4,
               "Title": "Console.h",
               "DocumentMoniker": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\Console.h",
               "RelativeDocumentMoniker": "Console.h",
@@ -81,7 +95,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 5,
               "Title": "Console.cpp",
               "DocumentMoniker": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\Console.cpp",
               "RelativeDocumentMoniker": "Console.cpp",
@@ -94,33 +108,33 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 6,
               "Title": "Process.h",
               "DocumentMoniker": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\Process.h",
               "RelativeDocumentMoniker": "Process.h",
               "ToolTip": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\Process.h",
               "RelativeToolTip": "Process.h",
-              "ViewState": "AgIAADsBAAAAAAAAAAAAANgAAAAzAAAAAAAAAA==",
+              "ViewState": "AgIAAEMBAAAAAAAAAAAAANgAAAAzAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
               "WhenOpened": "2025-06-14T06:59:21.78Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 1,
               "Title": "Scheduler.h",
               "DocumentMoniker": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\Scheduler.h",
               "RelativeDocumentMoniker": "Scheduler.h",
               "ToolTip": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\Scheduler.h",
               "RelativeToolTip": "Scheduler.h",
-              "ViewState": "AgIAAHsAAAAAAAAAAAAAACgAAABKAAAAAAAAAA==",
+              "ViewState": "AgIAAEgAAAAAAAAAAAAYwFYAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
               "WhenOpened": "2025-06-14T06:59:47.674Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 7,
               "Title": "main.cpp",
               "DocumentMoniker": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\main.cpp",
               "RelativeDocumentMoniker": "main.cpp",
