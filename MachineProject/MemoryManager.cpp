@@ -56,17 +56,16 @@ bool MemoryManager::allocateProcessMemory(int processId, const std::string& proc
     int pagesNeeded = memorySize / memoryPerFrame;
     if (memorySize % memoryPerFrame != 0) pagesNeeded++;
     
-    // Check if we have enough total memory
-    if (totalMemoryUsed + memorySize > maxOverallMemory) {
-        return false;
-    }
+    // In demand paging, we don't need to reserve all memory upfront
+    // We only need to ensure the process can fit within the total memory limit
+    // The actual memory will be allocated on-demand when pages are accessed
     
     // Create process memory entry
     ProcessMemory procMem(processId, processName, memorySize);
     procMem.pageTable.resize(pagesNeeded, -1); // All pages initially not in memory
     
     processes[processId] = procMem;
-    totalMemoryUsed += memorySize;
+    // Don't add to totalMemoryUsed until pages are actually loaded into memory
     
     return true;
 }
@@ -79,7 +78,7 @@ void MemoryManager::deallocateProcessMemory(int processId) {
     
     ProcessMemory& procMem = it->second;
     
-    // Free all allocated frames
+    // Free all allocated frames and update totalMemoryUsed
     for (int frameIndex : procMem.pageTable) {
         if (frameIndex != -1) {
             physicalMemory[frameIndex].isOccupied = false;
@@ -87,10 +86,10 @@ void MemoryManager::deallocateProcessMemory(int processId) {
             physicalMemory[frameIndex].pageNumber = -1;
             physicalMemory[frameIndex].isDirty = false;
             freeFrames.push(frameIndex);
+            totalMemoryUsed -= memoryPerFrame; // Subtract the frame size
         }
     }
     
-    totalMemoryUsed -= procMem.totalMemory;
     processes.erase(it);
 }
 
@@ -186,6 +185,8 @@ bool MemoryManager::handlePageFault(int processId, int pageNumber) {
         auto evictedIt = processes.find(physicalMemory[frameIndex].processId);
         if (evictedIt != processes.end()) {
             evictedIt->second.pageTable[physicalMemory[frameIndex].pageNumber] = -1;
+            // Update total memory used when a page is evicted
+            totalMemoryUsed -= memoryPerFrame;
         }
     }
     
@@ -201,6 +202,9 @@ bool MemoryManager::handlePageFault(int processId, int pageNumber) {
     
     // Update process page table
     procMem.pageTable[pageNumber] = frameIndex;
+    
+    // Update total memory used when a page is loaded
+    totalMemoryUsed += memoryPerFrame;
     
     return true;
 }
