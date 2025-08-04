@@ -35,8 +35,8 @@ MemoryManager::~MemoryManager() {
 }
 
 bool MemoryManager::isValidMemorySize(int size) {
-    // Check if size is power of 2 and within configured range
-    if (size < minMemoryPerProcess || size > maxMemoryPerProcess) return false;
+    // Check if size is power of 2 and within range [2^6, 2^16]
+    if (size < 64 || size > 65536) return false;
     return (size & (size - 1)) == 0; // Power of 2 check
 }
 

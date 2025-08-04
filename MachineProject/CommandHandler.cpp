@@ -218,8 +218,7 @@ void CommandHandler::screenS(const std::string& name, int memorySize) {
     // Validate memory size if specified
     if (memorySize > 0) {
         if (!memoryManager || !memoryManager->isValidMemorySize(memorySize)) {
-            std::cout << "Error: Invalid memory size " << memorySize << " bytes. Must be power of 2 between " 
-                      << global_min_mem_per_proc << " and " << global_max_mem_per_proc << " bytes." << std::endl;
+            std::cout << "Error: Invalid memory size " << memorySize << " bytes. Must be power of 2 between 64 and 65536 bytes." << std::endl;
             printEnter();
             return;
         }
@@ -326,8 +325,7 @@ void CommandHandler::screenC(const std::string& name, int memorySize, const std:
     
     // Validate memory size
     if (!memoryManager || !memoryManager->isValidMemorySize(memorySize)) {
-        std::cout << "Error: Invalid memory size " << memorySize << " bytes. Must be power of 2 between " 
-                  << global_min_mem_per_proc << " and " << global_max_mem_per_proc << " bytes." << std::endl;
+        std::cout << "Error: Invalid memory size " << memorySize << " bytes. Must be power of 2 between 64 and 65536 bytes." << std::endl;
         printEnter();
         return;
     }

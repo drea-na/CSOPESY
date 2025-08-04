@@ -15,4 +15,26 @@ D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(277,64): warning C4267:        
 D:\DLSU\CSOPESY\CSOPESY\MachineProject\Scheduler.h(150,44): warning C4101: 'e': unreferenced local variable
   (compiling source file 'CommandHandler.cpp')
   
+  MemoryManager.cpp
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\MemoryManager.cpp(108,17): warning C4018: '>=': signed/unsigned mismatch
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\MemoryManager.cpp(139,17): warning C4018: '>=': signed/unsigned mismatch
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\MemoryManager.cpp(350,49): warning C4267: '+=': conversion from 'size_t' to 'int', possible loss of data
+  main.cpp
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(148,36): warning C4101: 'e': unreferenced local variable
+  (compiling source file 'main.cpp')
+  
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(242,36): warning C4244: 'initializing': conversion from 'unsigned long' to 'uint16_t', possible loss of data
+  (compiling source file 'main.cpp')
+  
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(277,64): warning C4267: 'argument': conversion from 'size_t' to '_Ty', possible loss of data
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(277,64): warning C4267:         with
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(277,64): warning C4267:         [
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(277,64): warning C4267:             _Ty=int
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(277,64): warning C4267:         ]
+  (compiling source file 'main.cpp')
+  
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Scheduler.h(150,44): warning C4101: 'e': unreferenced local variable
+  (compiling source file 'main.cpp')
+  
+  Generating Code...
   MachineProject.vcxproj -> D:\DLSU\CSOPESY\CSOPESY\MachineProject\x64\Debug\MachineProject.exe
