@@ -28,7 +28,7 @@ public:
     void screenS(const std::string& name);
     void screenR(const std::string& name);
     void reportUtil();
-    void processSmi();
+    void processSmi(const std::string& processName);
     void printHeader();
     void printEnter();
 };
