@@ -85,6 +85,26 @@ public:
         }
     }
 
+    void addProcessWithMemory(Process* p, int customMemorySize) {
+        std::lock_guard<std::mutex> lock(queueMutex);
+
+        // Try to allocate memory for the process with custom size
+        if (memoryManager && memoryManager->canAllocateMemory(customMemorySize)) {
+            if (memoryManager->allocateMemory(p->name, customMemorySize)) {
+                processQueue.push_back(p);
+                cv.notify_one();
+            }
+            else {
+                // Memory allocation failed, add to waiting queue
+                waitingQueue.push_back(p);
+            }
+        }
+        else {
+            // Not enough memory, add to waiting queue
+            waitingQueue.push_back(p);
+        }
+    }
+
     void worker(int coreId) {
         while (!stopFlag) {
             Process* p = nullptr;

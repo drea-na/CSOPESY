@@ -147,6 +147,33 @@ void generateDummyProcess(const std::string& name) {
     }
 }
 
+void generateDummyProcessWithMemory(const std::string& name, int memorySize) {
+    // Place process logs in process_logs/
+    system("mkdir process_logs >nul 2>&1"); // Windows: suppress output if exists
+    Process* p = new Process(name);
+    p->generateRandomInstructions(global_min_ins, global_max_ins);
+    
+    // Set the memory size for this process (this will be used by the memory manager)
+    // For now, we'll store it in the process or pass it to the scheduler
+    if (scheduler) {
+        // Use the custom memory size instead of the default global_mem_per_proc
+        scheduler->addProcessWithMemory(p, memorySize);
+        // Add to process tracking list
+        {
+            std::lock_guard<std::mutex> lock(processMutex);
+            ProcessInfo info(nextProcessId++, name);
+            info.coreID = -1; // Not assigned to core yet
+            info.progress = 0;
+            info.total = p->totalCommands;
+            info.finished = false;
+            processList.push_back(info);
+        }
+    }
+    else {
+        delete p;
+    }
+}
+
 void showProcessList() {
     std::lock_guard<std::mutex> lock(processMutex);
 

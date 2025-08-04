@@ -36,6 +36,7 @@ extern int global_mem_per_proc;
 //external declarations
 extern void readConfig();
 extern void generateDummyProcess(const std::string& name);
+extern void generateDummyProcessWithMemory(const std::string& name, int memorySize);
 extern void showProcessList();
 
 bool CommandHandler::handleCommands(const std::string& command) {
@@ -65,8 +66,26 @@ bool CommandHandler::handleCommands(const std::string& command) {
         reportUtil();
     }
     else if (command.substr(0, 10) == "screen -s ") {
-        std::string name = command.substr(10);
-        screenS(name);
+        std::string remaining = command.substr(10);
+        size_t spacePos = remaining.find(' ');
+        if (spacePos != std::string::npos) {
+            // Format: screen -s <process_name> <memory_size>
+            std::string name = remaining.substr(0, spacePos);
+            std::string memorySizeStr = remaining.substr(spacePos + 1);
+            
+            try {
+                int memorySize = std::stoi(memorySizeStr);
+                screenS(name, memorySize);
+            } catch (const std::exception& e) {
+                std::cout << "Error: Invalid memory size format. Please provide a valid number." << std::endl;
+                printEnter();
+                return false;
+            }
+        } else {
+            // Format: screen -s <process_name> (no memory size specified)
+            std::string name = remaining;
+            screenS(name);
+        }
     }
     else if (command.substr(0, 10) == "screen -r ") {
         std::string name = command.substr(10);
@@ -165,7 +184,7 @@ void CommandHandler::screenList() {
     printEnter();
 }
 
-void CommandHandler::screenS(const std::string& name) {
+void CommandHandler::screenS(const std::string& name, int memorySize) {
     if (name.empty()) {
         std::cout << "Error: screen name cannot be empty." << std::endl;
         printEnter();
@@ -179,12 +198,26 @@ void CommandHandler::screenS(const std::string& name) {
         return;
     }
 
+    // Validate memory size if provided
+    if (memorySize != -1) {
+        if (!isValidMemorySize(memorySize)) {
+            std::cout << "Error: Invalid memory allocation. Memory size must be between 64 and 65536 bytes and be a power of 2." << std::endl;
+            printEnter();
+            return;
+        }
+    }
+
     // Check if process exists; if not, create it
     auto it = std::find_if(processList.begin(), processList.end(), [&](const ProcessInfo& p) { return p.name == name; });
     if (it == processList.end()) {
         try {
-            generateDummyProcess(name);
-            std::cout << "Process '" << name << "' created successfully." << std::endl;
+            if (memorySize != -1) {
+                generateDummyProcessWithMemory(name, memorySize);
+                std::cout << "Process '" << name << "' created successfully with " << memorySize << " bytes of memory." << std::endl;
+            } else {
+                generateDummyProcess(name);
+                std::cout << "Process '" << name << "' created successfully." << std::endl;
+            }
         }
         catch (const std::exception& e) {
             std::cout << "Error creating process '" << name << "': " << e.what() << std::endl;
@@ -429,6 +462,14 @@ void CommandHandler::printHeader() {
     std::cout << Default << "\n" << std::string(50, '-') << Default << std::endl;
     std::cout << Y << "Type 'exit' to quit, 'clear' to clear the screen" << Default << std::endl;
     std::cout << "root:\\> ";
+}
+
+bool CommandHandler::isPowerOfTwo(int n) const {
+    return n > 0 && (n & (n - 1)) == 0;
+}
+
+bool CommandHandler::isValidMemorySize(int size) const {
+    return size >= 64 && size <= 65536 && isPowerOfTwo(size);
 }
 
 void CommandHandler::printEnter() {
