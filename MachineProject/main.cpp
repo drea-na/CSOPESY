@@ -12,6 +12,7 @@
 #include "Console.h"
 #include "Scheduler.h"
 #include "CommandHandler.h"
+#include "MemoryManager.h"
 
 // Declare the screenMap variable
 std::map<std::string, Console> screenMap;
@@ -24,6 +25,13 @@ bool schedulerRunning = false;
 // global variables
 std::vector<ProcessInfo> processList;
 std::mutex processMutex;
+
+// Memory management globals
+MemoryManager* memoryManager = nullptr;
+int global_max_overall_mem = 8192; // 8KB default
+int global_mem_per_frame = 512;    // 512 bytes per frame
+int global_min_mem_per_proc = 64;  // 64 bytes minimum
+int global_max_mem_per_proc = 2048; // 2KB maximum
 
 // Scheduler globals
 Scheduler* scheduler = nullptr;
@@ -67,6 +75,10 @@ void readConfig() {
             else if (key == "min-ins") fin >> global_min_ins;
             else if (key == "max-ins") fin >> global_max_ins;
             else if (key == "delay-per-exec") fin >> global_delay_per_exec;
+            else if (key == "max-overall-mem") fin >> global_max_overall_mem;
+            else if (key == "mem-per-frame") fin >> global_mem_per_frame;
+            else if (key == "min-mem-per-proc") fin >> global_min_mem_per_proc;
+            else if (key == "max-mem-per-proc") fin >> global_max_mem_per_proc;
             // Add more config as needed
             else fin.ignore(1000, '\n');
         }
@@ -99,19 +111,59 @@ void readConfig() {
         std::cout << "[config.txt] delay-per-exec out of range (>=0). Using default (0)." << std::endl;
         global_delay_per_exec = 0;
     }
+    
+    // Memory management validation
+    if (global_max_overall_mem < 64 || global_max_overall_mem > 65536 || (global_max_overall_mem & (global_max_overall_mem - 1)) != 0) {
+        std::cout << "[config.txt] max-overall-mem out of range or not power of 2 (64-65536). Using default (8192)." << std::endl;
+        global_max_overall_mem = 8192;
+    }
+    if (global_mem_per_frame < 64 || global_mem_per_frame > 65536 || (global_mem_per_frame & (global_mem_per_frame - 1)) != 0) {
+        std::cout << "[config.txt] mem-per-frame out of range or not power of 2 (64-65536). Using default (512)." << std::endl;
+        global_mem_per_frame = 512;
+    }
+    if (global_min_mem_per_proc < 64 || global_min_mem_per_proc > 65536 || (global_min_mem_per_proc & (global_min_mem_per_proc - 1)) != 0) {
+        std::cout << "[config.txt] min-mem-per-proc out of range or not power of 2 (64-65536). Using default (64)." << std::endl;
+        global_min_mem_per_proc = 64;
+    }
+    if (global_max_mem_per_proc < global_min_mem_per_proc || global_max_mem_per_proc > 65536 || (global_max_mem_per_proc & (global_max_mem_per_proc - 1)) != 0) {
+        std::cout << "[config.txt] max-mem-per-proc out of range or not power of 2. Using default (2048)." << std::endl;
+        global_max_mem_per_proc = 2048;
+    }
 }
 
-void generateDummyProcess(const std::string& name) {
+void generateDummyProcess(const std::string& name, int memorySize = 0) {
     // Place process logs in process_logs/
     system("mkdir process_logs >nul 2>&1"); // Windows: suppress output if exists
-    Process* p = new Process(name);
+    
+    // Use default memory size if not specified
+    if (memorySize == 0) {
+        memorySize = global_min_mem_per_proc;
+    }
+    
+    // Validate memory size
+    if (!memoryManager || !memoryManager->isValidMemorySize(memorySize)) {
+        std::cout << "Error: Invalid memory size " << memorySize << " bytes. Must be power of 2 between " 
+                  << global_min_mem_per_proc << " and " << global_max_mem_per_proc << " bytes." << std::endl;
+        return;
+    }
+    
+    int processId = nextProcessId++;
+    
+    // Allocate memory for the process
+    if (!memoryManager->allocateProcessMemory(processId, name, memorySize)) {
+        std::cout << "Error: Failed to allocate memory for process " << name << std::endl;
+        return;
+    }
+    
+    Process* p = new Process(name, processId, memoryManager, memorySize);
     p->generateRandomInstructions(global_min_ins, global_max_ins);
+    
     if (scheduler) {
         scheduler->addProcess(p);
         // Add to process tracking list
         {
             std::lock_guard<std::mutex> lock(processMutex);
-            ProcessInfo info(nextProcessId++, name);
+            ProcessInfo info(processId, name);
             info.coreID = -1; // Not assigned to core yet
             info.progress = 0;
             info.total = p->totalCommands;
@@ -119,6 +171,7 @@ void generateDummyProcess(const std::string& name) {
             processList.push_back(info);
         }
     } else {
+        memoryManager->deallocateProcessMemory(processId);
         delete p;
     }
 }
@@ -171,6 +224,10 @@ void showProcessList() {
 
 
 int main() {
+    // Initialize memory manager
+    memoryManager = new MemoryManager(global_max_overall_mem, global_mem_per_frame, 
+                                     global_min_mem_per_proc, global_max_mem_per_proc);
+    
     CommandHandler handler(screenMap, scheduler);
     bool running = true;
     std::string command;
@@ -182,6 +239,7 @@ int main() {
         if (command == "exit") {
             std::cout << "Shutting down... bye bye" << std::endl;
             if (scheduler) delete scheduler;
+            if (memoryManager) delete memoryManager;
             running = false;
         } else {
             handler.handleCommands(command);

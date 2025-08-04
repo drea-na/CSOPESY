@@ -14,6 +14,9 @@
 #include <cstdint>
 #include <stdexcept>
 
+// Include MemoryManager header
+#include "MemoryManager.h"
+
 struct ProcessInfo {
     int id;
     std::string name;
@@ -50,7 +53,9 @@ public:
         ADD,
         SUBTRACT,
         SLEEP,
-        FOR
+        FOR,
+        READ,
+        WRITE
     };
 
     struct Instruction {
@@ -66,9 +71,16 @@ public:
     int currentInstr = 0;
     int sleepTicks = 0;
     bool isFinished = false;
+    
+    // Memory management
+    int processId;
+    int allocatedMemory;
+    MemoryManager* memoryManager;
 
     // Constructor
-    Process(const std::string& processName) : name(processName), totalCommands(0), executedCommands(0) {
+    Process(const std::string& processName, int pid = -1, MemoryManager* mm = nullptr, int memSize = 0) 
+        : name(processName), totalCommands(0), executedCommands(0), 
+          processId(pid), allocatedMemory(memSize), memoryManager(mm) {
         // Create logs directory if it doesn't exist
         system("mkdir process_logs 2>nul"); // Windows command, silent error
         
@@ -92,6 +104,9 @@ public:
 
     // Generate random instructions for the process
     void generateRandomInstructions(int minIns, int maxIns);
+    
+    // Add custom instruction
+    void addInstruction(InstrType type, const std::vector<std::string>& args);
 
     // Check if process is complete
     bool isComplete() const {
@@ -132,6 +147,14 @@ inline void Process::logMessage(const std::string& message, int coreId) {
         logFile.flush();
     } catch (const std::exception& e) {
     }
+}
+
+inline void Process::addInstruction(InstrType type, const std::vector<std::string>& args) {
+    Instruction instr;
+    instr.type = type;
+    instr.args = args;
+    instructions.push_back(instr);
+    totalCommands++;
 }
 
 inline bool Process::executeNextInstruction(int coreId) {
@@ -196,6 +219,42 @@ inline bool Process::executeNextInstruction(int coreId) {
             }
             break;
         }
+        case InstrType::READ: {
+            if (instr.args.size() >= 2 && memoryManager) {
+                try {
+                    std::string varName = instr.args[0];
+                    uint32_t address = std::stoul(instr.args[1], nullptr, 16); // Parse hex address
+                    uint16_t value = memoryManager->readMemory(processId, address);
+                    setVariable(varName, value);
+                    logMessage("READ " + varName + " = " + std::to_string(value) + " from 0x" + instr.args[1], coreId);
+                } catch (const std::exception& e) {
+                    logMessage("Memory access violation: " + std::string(e.what()), coreId);
+                    isFinished = true;
+                    return false;
+                }
+            }
+            break;
+        }
+        case InstrType::WRITE: {
+            if (instr.args.size() >= 2 && memoryManager) {
+                try {
+                    uint32_t address = std::stoul(instr.args[0], nullptr, 16); // Parse hex address
+                    uint16_t value = std::stoul(instr.args[1]);
+                    if (memoryManager->writeMemory(processId, address, value)) {
+                        logMessage("WRITE " + std::to_string(value) + " to 0x" + instr.args[0], coreId);
+                    } else {
+                        logMessage("Memory access violation: failed to write to 0x" + instr.args[0], coreId);
+                        isFinished = true;
+                        return false;
+                    }
+                } catch (const std::exception& e) {
+                    logMessage("Memory access violation: " + std::string(e.what()), coreId);
+                    isFinished = true;
+                    return false;
+                }
+            }
+            break;
+        }
         }
 
         ++currentInstr;
@@ -214,7 +273,7 @@ inline void Process::generateRandomInstructions(int minIns, int maxIns) {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> insDist(minIns, maxIns);
-    std::uniform_int_distribution<> typeDist(0, 4);
+    std::uniform_int_distribution<> typeDist(0, 6); // Now includes READ and WRITE
     std::uniform_int_distribution<> varDist(0, varNames.size() - 1);
     std::uniform_int_distribution<> valDist(1, 100);
     std::uniform_int_distribution<> sleepDist(1, 5);
@@ -258,6 +317,18 @@ inline void Process::generateRandomInstructions(int minIns, int maxIns) {
         case 4: // SLEEP
             instr.type = InstrType::SLEEP;
             instr.args.push_back(std::to_string(sleepDist(gen)));
+            break;
+
+        case 5: // READ
+            instr.type = InstrType::READ;
+            instr.args.push_back(varNames[varDist(gen)]); // variable name
+            instr.args.push_back("0x" + std::to_string(valDist(gen) * 16)); // hex address
+            break;
+
+        case 6: // WRITE
+            instr.type = InstrType::WRITE;
+            instr.args.push_back("0x" + std::to_string(valDist(gen) * 16)); // hex address
+            instr.args.push_back(std::to_string(valDist(gen))); // value
             break;
         }
 
