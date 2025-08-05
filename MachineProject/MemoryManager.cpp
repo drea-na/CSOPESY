@@ -3,11 +3,22 @@
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
+#include <fstream>
+#include <unordered_map>
+#include <queue>
+#include <mutex>
+#include <vector>
+#include <ctime>
+
+std::vector<uint8_t> simulatedMemory(1 << 20, 0); // 1MB simulated memory
 
 MemoryManager::MemoryManager(int totalMem, int frameSz, int maxMemPerProc)
     : totalMemory(totalMem), frameSize(frameSz), maxMemoryPerProcess(maxMemPerProc), currentQuantumCycle(0) {
     // Initialize with one free block covering the entire memory
     memoryBlocks.push_back(MemoryBlock(0, totalMemory, "", false));
+    // Demand paging: initialize frame table
+    numFrames = totalMemory / frameSize;
+    frameTable.resize(numFrames, std::make_pair("", -1));
 }
 
 bool MemoryManager::allocateMemory(const std::string& processName, int requiredSize) {
@@ -168,4 +179,130 @@ void MemoryManager::writeMemorySnapshotToFile(const std::string& filename, int q
     file << std::endl;
 
     file.close();
+}
+
+// Simulate accessing a page (triggers page fault if not present)
+void MemoryManager::accessPage(const std::string& processName, int pageNumber, bool isWrite) {
+    std::lock_guard<std::mutex> lock(memoryMutex);
+    auto& procPages = pageTable[processName];
+    if (procPages.find(pageNumber) == procPages.end() || !procPages[pageNumber].inMemory) {
+        // Page fault
+        handlePageFault(processName, pageNumber, isWrite);
+    } else {
+        // Page is in memory, mark dirty if write
+        if (isWrite) procPages[pageNumber].dirty = true;
+    }
+}
+
+void MemoryManager::handlePageFault(const std::string& processName, int pageNumber, bool isWrite) {
+    // Find a free frame
+    int freeFrame = -1;
+    for (int i = 0; i < numFrames; ++i) {
+        if (frameTable[i].first.empty()) {
+            freeFrame = i;
+            break;
+        }
+    }
+    if (freeFrame == -1) {
+        // No free frame, need to evict
+        auto victim = selectVictimPage();
+        evictPage(victim.first, victim.second);
+        // After eviction, find the now-free frame
+        for (int i = 0; i < numFrames; ++i) {
+            if (frameTable[i].first.empty()) {
+                freeFrame = i;
+                break;
+            }
+        }
+    }
+    // Load the page into the free frame
+    frameTable[freeFrame] = {processName, pageNumber};
+    pageTable[processName][pageNumber] = {freeFrame, true, isWrite};
+    // If page was in backing store, read it
+    readPageFromBackingStore(processName, pageNumber);
+    // Add to FIFO queue
+    fifoQueue.push({processName, pageNumber});
+}
+
+std::pair<std::string, int> MemoryManager::selectVictimPage() {
+    // FIFO: evict the oldest page
+    if (fifoQueue.empty()) return {"", -1};
+    auto victim = fifoQueue.front();
+    fifoQueue.pop();
+    return victim;
+}
+
+void MemoryManager::evictPage(const std::string& processName, int pageNumber) {
+    auto& pageInfo = pageTable[processName][pageNumber];
+    int frameIdx = pageInfo.frameIndex;
+    // Write to backing store if dirty
+    if (pageInfo.dirty) {
+        writePageToBackingStore(processName, pageNumber);
+    }
+    // Mark frame as free
+    frameTable[frameIdx] = {"", -1};
+    pageInfo.inMemory = false;
+    pageInfo.frameIndex = -1;
+    pageInfo.dirty = false;
+}
+
+void MemoryManager::writePageToBackingStore(const std::string& processName, int pageNumber) {
+    std::ofstream backingStore(backingStoreFilename, std::ios::app);
+    if (backingStore.is_open()) {
+        backingStore << processName << " " << pageNumber << "\n";
+        // Simulate writing page data (could add more info here)
+        backingStore.close();
+    }
+}
+
+void MemoryManager::readPageFromBackingStore(const std::string& processName, int pageNumber) {
+    // Simulate reading: remove entry from file if present
+    std::ifstream inFile(backingStoreFilename);
+    std::ofstream outFile("temp_bstore.txt");
+    std::string line;
+    while (std::getline(inFile, line)) {
+        std::istringstream iss(line);
+        std::string pname; int pnum;
+        if (iss >> pname >> pnum) {
+            if (!(pname == processName && pnum == pageNumber)) {
+                outFile << line << "\n";
+            }
+        }
+    }
+    inFile.close();
+    outFile.close();
+    std::remove(backingStoreFilename.c_str());
+    std::rename("temp_bstore.txt", backingStoreFilename.c_str());
+}
+
+// Simulated physical memory (shared by all processes)
+
+bool MemoryManager::readMemory(const std::string& processName, int processMemSize, uint32_t address, uint16_t& outValue) {
+    std::lock_guard<std::mutex> lock(memoryMutex);
+    // Bounds check: address must be within process's allocated memory
+    if (address + 1 >= (uint32_t)processMemSize) return false;
+    // Demand paging: ensure both bytes are paged in
+    int pageSize = frameSize;
+    int pageNum1 = address / pageSize;
+    int pageNum2 = (address + 1) / pageSize;
+    accessPage(processName, pageNum1, false);
+    if (pageNum2 != pageNum1) accessPage(processName, pageNum2, false);
+    // Simulate memory as a global array, offset by processName hash
+    size_t base = std::hash<std::string>{}(processName) % (simulatedMemory.size() - processMemSize + 1);
+    outValue = simulatedMemory[base + address] | (simulatedMemory[base + address + 1] << 8);
+    return true;
+}
+
+bool MemoryManager::writeMemory(const std::string& processName, int processMemSize, uint32_t address, uint16_t value) {
+    std::lock_guard<std::mutex> lock(memoryMutex);
+    if (address + 1 >= (uint32_t)processMemSize) return false;
+    int pageSize = frameSize;
+    int pageNum1 = address / pageSize;
+    int pageNum2 = (address + 1) / pageSize;
+    accessPage(processName, pageNum1, true);
+    if (pageNum2 != pageNum1) accessPage(processName, pageNum2, true);
+    size_t base = std::hash<std::string>{}(processName) % (simulatedMemory.size() - processMemSize + 1);
+    simulatedMemory[base + address] = value & 0xFF;
+    simulatedMemory[base + address + 1] = (value >> 8) & 0xFF;
+    return true;
 }

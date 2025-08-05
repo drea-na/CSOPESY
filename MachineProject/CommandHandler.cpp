@@ -8,6 +8,7 @@
 #include <queue>
 #include <algorithm>
 #include <condition_variable>
+#include <sstream> // Required for std::istringstream
 
 const std::string G = "\033[32m"; //G for green
 const std::string Y = "\033[33m"; //Y for yellow
@@ -32,6 +33,7 @@ extern std::atomic<int> totalCpuCycles;
 extern std::atomic<int> activeCpuCycles;
 extern MemoryManager* memoryManager;
 extern int global_mem_per_proc;
+extern int nextProcessId;
 
 //external declarations
 extern void readConfig();
@@ -40,12 +42,12 @@ extern void generateDummyProcessWithMemory(const std::string& name, int memorySi
 extern void showProcessList();
 
 bool CommandHandler::handleCommands(const std::string& command) {
-    // Only allow 'initialize' and 'exit' before initialization
     if (!initialized && command != "initialize" && command != "exit" && command != "clear") {
         std::cout << Y << "You must run 'initialize' before any other command!" << Default << std::endl;
         printEnter();
         return false;
     }
+
     if (command == "clear") {
         system("cls");
         printHeader();
@@ -68,26 +70,217 @@ bool CommandHandler::handleCommands(const std::string& command) {
     else if (command == "report-util") {
         reportUtil();
     }
+    else if (command.substr(0, 10) == "screen -c ") {
+        std::string remaining = command.substr(10);
+        size_t firstSpace = remaining.find(' ');
+        if (firstSpace == std::string::npos) {
+            std::cout << "Error: Invalid command format. Usage: screen -c <process_name> [<memory_size>] \"<instructions>\"" << std::endl;
+            printEnter();
+            return false;
+        }
+
+        std::string name = remaining.substr(0, firstSpace);
+        remaining = remaining.substr(firstSpace + 1);
+
+        size_t quoteStart = remaining.find('"');
+        if (quoteStart == std::string::npos) {
+            std::cout << "Error: Instructions must be enclosed in double quotes." << std::endl;
+            printEnter();
+            return false;
+        }
+
+        std::string beforeQuote = remaining.substr(0, quoteStart);
+        std::string instructionsStr = remaining.substr(quoteStart);
+
+        // Remove quotes around instructions
+        if (!instructionsStr.empty() && instructionsStr.front() == '"' && instructionsStr.back() == '"') {
+            instructionsStr = instructionsStr.substr(1, instructionsStr.size() - 2);
+        }
+
+        int memorySize = 1024; // Default
+        try {
+            if (!beforeQuote.empty()) {
+                memorySize = std::stoi(beforeQuote);
+                if (!isValidMemorySize(memorySize)) {
+                    std::cout << "Error: Invalid memory allocation. Must be 64-65536 and power of 2." << std::endl;
+                    printEnter();
+                    return false;
+                }
+            }
+        }
+        catch (...) {
+            std::cout << "Error: Invalid memory size format." << std::endl;
+            printEnter();
+            return false;
+        }
+
+        // Split instructions by semicolon
+        std::vector<std::string> instrs;
+        size_t start = 0, end = 0;
+        while ((end = instructionsStr.find(';', start)) != std::string::npos) {
+            std::string instr = instructionsStr.substr(start, end - start);
+            if (!instr.empty()) instrs.push_back(instr);
+            start = end + 1;
+        }
+        if (start < instructionsStr.size()) {
+            std::string instr = instructionsStr.substr(start);
+            if (!instr.empty()) instrs.push_back(instr);
+        }
+
+        if (instrs.size() < 1 || instrs.size() > 50) {
+            std::cout << "Error: Instruction count must be between 1 and 50." << std::endl;
+            printEnter();
+            return false;
+        }
+
+        Process* p = new Process(name);
+        p->memoryManager = memoryManager;
+        p->memorySize = memorySize;
+
+        for (std::string line : instrs) {
+            std::istringstream iss(line);
+            std::string cmd;
+            iss >> cmd;
+
+            Process::Instruction instr;
+
+            if (cmd == "PRINT") {
+                instr.type = Process::InstrType::PRINT;
+
+                std::string rest;
+                std::getline(iss, rest);
+
+                size_t openParen = rest.find('(');
+                size_t closeParen = rest.rfind(')');
+
+                if (openParen != std::string::npos && closeParen != std::string::npos && closeParen > openParen) {
+                    std::string expr = rest.substr(openParen + 1, closeParen - openParen - 1);
+
+                    // Split by '+' while respecting quoted strings
+                    std::vector<std::string> parts;
+                    std::string current;
+                    bool inQuotes = false;
+                    for (char ch : expr) {
+                        if (ch == '"') {
+                            inQuotes = !inQuotes;
+                        }
+                        if (ch == '+' && !inQuotes) {
+                            if (!current.empty()) {
+                                current.erase(0, current.find_first_not_of(" \t"));
+                                current.erase(current.find_last_not_of(" \t") + 1);
+                                parts.push_back(current);
+                                current.clear();
+                            }
+                        }
+                        else {
+                            current += ch;
+                        }
+                    }
+                    if (!current.empty()) {
+                        current.erase(0, current.find_first_not_of(" \t"));
+                        current.erase(current.find_last_not_of(" \t") + 1);
+                        parts.push_back(current);
+                    }
+
+                    for (const std::string& part : parts) {
+                        instr.args.push_back(part);
+                    }
+                }
+                else {
+                    std::cout << "Error: Invalid PRINT format." << std::endl;
+                    delete p;
+                    printEnter();
+                    return false;
+                }
+            }
+            else if (cmd == "DECLARE") {
+                instr.type = Process::InstrType::DECLARE;
+                std::string var, val;
+                if (iss >> var >> val) {
+                    instr.args.push_back(var);
+                    instr.args.push_back(val);
+                }
+            }
+            else if (cmd == "ADD") {
+                instr.type = Process::InstrType::ADD;
+                std::string a, b, c;
+                if (iss >> a >> b >> c) {
+                    instr.args = { a, b, c };
+                }
+            }
+            else if (cmd == "SUBTRACT") {
+                instr.type = Process::InstrType::SUBTRACT;
+                std::string a, b, c;
+                if (iss >> a >> b >> c) {
+                    instr.args = { a, b, c };
+                }
+            }
+            else if (cmd == "SLEEP") {
+                instr.type = Process::InstrType::SLEEP;
+                std::string ticks;
+                if (iss >> ticks) instr.args.push_back(ticks);
+            }
+            else if (cmd == "READ") {
+                instr.type = Process::InstrType::READ;
+                std::string var, addr;
+                if (iss >> var >> addr) {
+                    instr.args = { var, addr };
+                }
+            }
+            else if (cmd == "WRITE") {
+                instr.type = Process::InstrType::WRITE;
+                std::string addr, val;
+                if (iss >> addr >> val) {
+                    instr.args = { addr, val };
+                }
+            }
+            else {
+                std::cout << "Error: Unknown instruction '" << cmd << "'." << std::endl;
+                delete p;
+                printEnter();
+                return false;
+            }
+
+            p->instructions.push_back(instr);
+        }
+
+        p->totalCommands = p->instructions.size();
+        p->executedCommands = 0;
+
+        if (scheduler) {
+            scheduler->addProcessWithMemory(p, memorySize);
+            std::lock_guard<std::mutex> lock(processMutex);
+            ProcessInfo info(nextProcessId++, name);
+            info.coreID = -1;
+            info.progress = 0;
+            info.total = p->totalCommands;
+            info.finished = false;
+            processList.push_back(info);
+        }
+        else {
+            delete p;
+        }
+
+        std::cout << "Process '" << name << "' created successfully with " << memorySize << " bytes of memory." << std::endl;
+    }
     else if (command.substr(0, 10) == "screen -s ") {
         std::string remaining = command.substr(10);
         size_t spacePos = remaining.find(' ');
         if (spacePos != std::string::npos) {
-            // Format: screen -s <process_name> <memory_size>
             std::string name = remaining.substr(0, spacePos);
             std::string memorySizeStr = remaining.substr(spacePos + 1);
-            
             try {
                 int memorySize = std::stoi(memorySizeStr);
                 screenS(name, memorySize);
-            } catch (const std::exception& e) {
-                std::cout << "Error: Invalid memory size format. Please provide a valid number." << std::endl;
+            }
+            catch (...) {
+                std::cout << "Error: Invalid memory size format." << std::endl;
                 printEnter();
                 return false;
             }
-        } else {
-            // Format: screen -s <process_name> (no memory size specified)
-            std::string name = remaining;
-            screenS(name);
+        }
+        else {
+            screenS(remaining);
         }
     }
     else if (command.substr(0, 10) == "screen -r ") {
@@ -290,21 +483,25 @@ void CommandHandler::screenR(const std::string& name) {
         printEnter();
         return;
     }
-
     // Validate process name
     if (name.find_first_of("\\/:*?\"<>|") != std::string::npos) {
         std::cout << "Error: Invalid process name. Cannot contain \\/:*?\"<>|" << std::endl;
         printEnter();
         return;
     }
-
     auto it = std::find_if(processList.begin(), processList.end(), [&](const ProcessInfo& p) { return p.name == name && !p.finished; });
     if (it == processList.end()) {
         std::cout << "Process " << name << " not found or already finished" << std::endl;
         printEnter();
         return;
     }
-
+    // Check for memory access violation
+    if (it->accessViolation) {
+        std::cout << "Process " << name << " shut down due to memory access violation error that occurred at "
+                  << it->violationTime << ". 0x" << std::hex << it->violationAddress << " invalid." << std::endl;
+        printEnter();
+        return;
+    }
     bool inScreen = true;
     system("cls");
     std::cout << "\n=== Screen for Process: " << it->name << " ===" << std::endl;
@@ -321,11 +518,9 @@ void CommandHandler::screenR(const std::string& name) {
         for (int i = std::max(0, (int)lines.size() - 10); i < (int)lines.size(); ++i) {
             std::cout << lines[i] << std::endl;
         }
-    }
-    else {
+    } else {
         std::cout << "--- No PRINT logs yet ---" << std::endl;
     }
-
     while (inScreen) {
         printEnter();
         std::string input;
@@ -334,15 +529,12 @@ void CommandHandler::screenR(const std::string& name) {
             inScreen = false;
             system("cls");
             printHeader();
-        }
-        else if (input == "process-smi") {
+        } else if (input == "process-smi") {
             inScreen = true;
             processSmi(name);
-        }
-        else if (input == "vmstat") {
+        } else if (input == "vmstat") {
             vmstat();
-        }
-        else {
+        } else {
             std::cout << "Unknown command in screen '" << name << "'. Type 'exit' to leave the screen." << std::endl;
         }
     }

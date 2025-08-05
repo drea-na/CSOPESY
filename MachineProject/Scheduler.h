@@ -10,6 +10,7 @@
 #include <condition_variable>
 #include "Process.h"
 #include "MemoryManager.h"
+#include <ctime>
 
 extern std::atomic<int> coresUsed;
 extern std::atomic<int> totalCpuCycles;
@@ -37,13 +38,14 @@ private:
     SchedulingAlgorithm algorithm;
     std::vector<std::thread> workerThreads;
     MemoryManager* memoryManager;
-    int memoryPerProcess;
+    int minMemoryPerProcess;
+    int maxMemoryPerProcess;
     std::atomic<int> currentQuantumCycle;
 
 
 public:
-    Scheduler(int coreCount_, SchedulingAlgorithm algo, MemoryManager* memMgr, int memPerProc, int quantum = 1)
-        : coreCount(coreCount_), algorithm(algo), quantumCycles(quantum), memoryManager(memMgr), memoryPerProcess(memPerProc), currentQuantumCycle(0) {
+    Scheduler(int coreCount_, SchedulingAlgorithm algo, MemoryManager* memMgr, int minMemPerProc, int maxMemPerProc, int quantum = 1)
+        : coreCount(coreCount_), algorithm(algo), quantumCycles(quantum), memoryManager(memMgr), minMemoryPerProcess(minMemPerProc), maxMemoryPerProcess(maxMemPerProc), currentQuantumCycle(0) {
     }
 
     void start() {
@@ -69,8 +71,8 @@ public:
         std::lock_guard<std::mutex> lock(queueMutex);
 
         // Try to allocate memory for the process
-        if (memoryManager && memoryManager->canAllocateMemory(memoryPerProcess)) {
-            if (memoryManager->allocateMemory(p->name, memoryPerProcess)) {
+        if (memoryManager && memoryManager->canAllocateMemory(minMemoryPerProcess)) {
+            if (memoryManager->allocateMemory(p->name, minMemoryPerProcess)) {
                 processQueue.push_back(p);
                 cv.notify_one();
             }
@@ -155,6 +157,17 @@ public:
                                     info.progress = p->executedCommands;
                                     if (!running) {
                                         info.finished = true;
+                                        if (p->accessViolation) {
+                                            info.accessViolation = true;
+                                            info.violationAddress = p->violationAddress;
+                                            // Get current time as string
+                                            std::time_t t = std::time(nullptr);
+                                            std::tm tm;
+                                            localtime_s(&tm, &t);
+                                            char buf[16];
+                                            std::strftime(buf, sizeof(buf), "%H:%M:%S", &tm);
+                                            info.violationTime = buf;
+                                        }
                                     }
                                     break;
                                 }
@@ -189,6 +202,17 @@ public:
                                     info.progress = p->executedCommands;
                                     if (!running) {
                                         info.finished = true;
+                                        if (p->accessViolation) {
+                                            info.accessViolation = true;
+                                            info.violationAddress = p->violationAddress;
+                                            // Get current time as string
+                                            std::time_t t = std::time(nullptr);
+                                            std::tm tm;
+                                            localtime_s(&tm, &t);
+                                            char buf[16];
+                                            std::strftime(buf, sizeof(buf), "%H:%M:%S", &tm);
+                                            info.violationTime = buf;
+                                        }
                                     }
                                     break;
                                 }
@@ -205,7 +229,7 @@ public:
                     }
                 }
             }
-            catch (const std::exception& e) {
+            catch (const std::exception&) {
                 // Handle process execution errors
                 std::lock_guard<std::mutex> lock(processMutex);
                 for (auto& info : processList) {
@@ -225,8 +249,8 @@ public:
                 // Try to move waiting processes to ready queue
                 while (!waitingQueue.empty()) {
                     Process* waitingProcess = waitingQueue.front();
-                    if (memoryManager->canAllocateMemory(memoryPerProcess) &&
-                        memoryManager->allocateMemory(waitingProcess->name, memoryPerProcess)) {
+                    if (memoryManager->canAllocateMemory(minMemoryPerProcess) &&
+                        memoryManager->allocateMemory(waitingProcess->name, minMemoryPerProcess)) {
                         waitingQueue.pop_front();
                         processQueue.push_back(waitingProcess);
                         cv.notify_one();

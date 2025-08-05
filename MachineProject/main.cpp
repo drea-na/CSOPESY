@@ -35,6 +35,8 @@ int global_batch_process_freq = 1;
 int global_min_ins = 1000;
 int global_max_ins = 2000;
 int global_delay_per_exec = 0;
+int global_min_mem_per_proc = 256;
+int global_max_mem_per_proc = 256;
 
 // Memory manager globals
 MemoryManager* memoryManager = nullptr;
@@ -76,8 +78,8 @@ void readConfig() {
             else if (key == "delay-per-exec") fin >> global_delay_per_exec;
             else if (key == "max-overall-mem") fin >> global_max_overall_mem;
             else if (key == "mem-per-frame") fin >> global_mem_per_frame;
-            else if (key == "mem-per-proc") fin >> global_mem_per_proc;
-            // Add more config as needed
+            else if (key == "min-mem-per-proc") fin >> global_min_mem_per_proc;
+            else if (key == "max-mem-per-proc") fin >> global_max_mem_per_proc;
             else fin.ignore(1000, '\n');
         }
     }
@@ -118,17 +120,42 @@ void readConfig() {
         std::cout << "[config.txt] mem-per-frame out of range (>=1). Using default (16)." << std::endl;
         global_mem_per_frame = 16;
     }
-    if (global_mem_per_proc < 1) {
-        std::cout << "[config.txt] mem-per-proc out of range (>=1). Using default (4096)." << std::endl;
-        global_mem_per_proc = 4096;
+    if (global_min_mem_per_proc < 1) {
+        std::cout << "[config.txt] min-mem-per-proc out of range (>=1). Using default (256)." << std::endl;
+        global_min_mem_per_proc = 256;
     }
+    if (global_max_mem_per_proc < global_min_mem_per_proc) {
+        std::cout << "[config.txt] max-mem-per-proc less than min. Setting max = min." << std::endl;
+        global_max_mem_per_proc = global_min_mem_per_proc;
+    }
+
+    // Print final configuration
+    std::cout << "\n=== Configuration Loaded ===\n";
+    std::cout << "Number of CPUs           : " << global_core_count << "\n";
+    std::cout << "Scheduler Algorithm      : "
+        << (global_algo == SchedulingAlgorithm::FCFS ? "FCFS" :
+            global_algo == SchedulingAlgorithm::RR ? "RR" : "Unknown") << "\n";
+    std::cout << "Quantum Cycles           : " << global_quantum << "\n";
+    std::cout << "Batch Process Frequency  : " << global_batch_process_freq << "\n";
+    std::cout << "Min Instructions         : " << global_min_ins << "\n";
+    std::cout << "Max Instructions         : " << global_max_ins << "\n";
+    std::cout << "Delay Per Execution      : " << global_delay_per_exec << "\n";
+    std::cout << "Max Overall Memory       : " << global_max_overall_mem << "\n";
+    std::cout << "Memory Per Frame         : " << global_mem_per_frame << "\n";
+    std::cout << "Memory Per Process (min) : " << global_min_mem_per_proc << "\n";
+    std::cout << "Memory Per Process (max) : " << global_max_mem_per_proc << "\n";
+    std::cout << "============================\n";
 }
+
+
 
 void generateDummyProcess(const std::string& name) {
     // Place process logs in process_logs/
     system("mkdir process_logs >nul 2>&1"); // Windows: suppress output if exists
     Process* p = new Process(name);
     p->generateRandomInstructions(global_min_ins, global_max_ins);
+    p->memoryManager = memoryManager;
+    p->memorySize = global_mem_per_proc;
     if (scheduler) {
         scheduler->addProcess(p);
         // Add to process tracking list
@@ -152,9 +179,8 @@ void generateDummyProcessWithMemory(const std::string& name, int memorySize) {
     system("mkdir process_logs >nul 2>&1"); // Windows: suppress output if exists
     Process* p = new Process(name);
     p->generateRandomInstructions(global_min_ins, global_max_ins);
-    
-    // Set the memory size for this process (this will be used by the memory manager)
-    // For now, we'll store it in the process or pass it to the scheduler
+    p->memoryManager = memoryManager;
+    p->memorySize = memorySize;
     if (scheduler) {
         // Use the custom memory size instead of the default global_mem_per_proc
         scheduler->addProcessWithMemory(p, memorySize);

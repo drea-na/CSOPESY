@@ -13,6 +13,8 @@
 #include <random>
 #include <cstdint>
 #include <stdexcept>
+#include "MemoryManager.h"
+#include <ctime>
 
 struct ProcessInfo {
     int id;
@@ -22,11 +24,15 @@ struct ProcessInfo {
     int progress;
     int total;
     bool finished;
-
-    // Constructor for initialization
+    // For memory access violation reporting
+    bool accessViolation = false;
+    uint32_t violationAddress = 0;
+    std::string violationTime;
+    // Default constructor
+    ProcessInfo() : id(-1), name(""), coreID(-1), progress(0), total(0), finished(false) {}
+    // Main constructor
     ProcessInfo(int pid, const std::string& pname)
         : id(pid), name(pname), coreID(-1), progress(0), total(100), finished(false) {
-        // Get current timestamp
         auto now = std::chrono::system_clock::now();
         auto time = std::chrono::system_clock::to_time_t(now);
         std::tm tm_time;
@@ -43,6 +49,10 @@ public:
     int totalCommands;
     int executedCommands;
     std::ofstream logFile;
+    MemoryManager* memoryManager = nullptr; // Pointer to memory manager
+    int memorySize = 0; // Allocated memory size for this process
+    bool accessViolation = false; // Set to true if process is killed by memory violation
+    uint32_t violationAddress = 0; // Offending address
 
     enum class InstrType {
         PRINT,
@@ -50,11 +60,13 @@ public:
         ADD,
         SUBTRACT,
         SLEEP,
-        FOR
+        FOR,
+        READ,
+        WRITE
     };
 
     struct Instruction {
-        InstrType type;
+        InstrType type = InstrType::PRINT;
         std::vector<std::string> args;
         std::vector<Instruction> body; // For FOR loops only
         int repeats = 0;
@@ -130,7 +142,7 @@ inline void Process::logMessage(const std::string& message, int coreId) {
             << ") Core:" << coreId << " \"" << message << "\"";
         logFile << ss.str() << std::endl;
         logFile.flush();
-    } catch (const std::exception& e) {
+    } catch (const std::exception&) {
     }
 }
 
@@ -140,16 +152,13 @@ inline bool Process::executeNextInstruction(int coreId) {
         --sleepTicks;
         return true; // Still running, just sleeping
     }
-
     // Check if finished
     if (currentInstr >= instructions.size()) {
         isFinished = true;
         return false;
     }
-
     try {
         const Instruction& instr = instructions[currentInstr];
-
         switch (instr.type) {
         case InstrType::PRINT: {
             std::string msg = "Hello world from " + name + "!";
@@ -160,7 +169,7 @@ inline bool Process::executeNextInstruction(int coreId) {
             break;
         }
         case InstrType::DECLARE: {
-            if (instr.args.size() >= 2) {
+            if (instr.args.size() >= 2 && variables.size() < 32) { // Enforce symbol table size
                 int val = std::stoi(instr.args[1]);
                 setVariable(instr.args[0], val);
             }
@@ -196,13 +205,46 @@ inline bool Process::executeNextInstruction(int coreId) {
             }
             break;
         }
+        case InstrType::READ: {
+            // READ var memory_address
+            if (instr.args.size() >= 2 && memoryManager) {
+                std::string var = instr.args[0];
+                uint32_t addr = std::stoul(instr.args[1], nullptr, 0);
+                uint16_t value = 0;
+                if (!memoryManager->readMemory(name, memorySize, addr, value)) {
+                    accessViolation = true;
+                    violationAddress = addr;
+                    isFinished = true;
+                    logMessage("Memory access violation at address 0x" + std::to_string(addr), coreId);
+                    return false;
+                }
+                setVariable(var, value);
+            }
+            break;
         }
-
+        case InstrType::WRITE: {
+            // WRITE memory_address value
+            if (instr.args.size() >= 2 && memoryManager) {
+                uint32_t addr = std::stoul(instr.args[0], nullptr, 0);
+                int val = 0;
+                if (variables.count(instr.args[1])) val = variables[instr.args[1]];
+                else val = std::stoi(instr.args[1]);
+                if (!memoryManager->writeMemory(name, memorySize, addr, (uint16_t)val)) {
+                    accessViolation = true;
+                    violationAddress = addr;
+                    isFinished = true;
+                    logMessage("Memory access violation at address 0x" + std::to_string(addr), coreId);
+                    return false;
+                }
+            }
+            break;
+        }
+        }
         ++currentInstr;
         ++executedCommands;
         return currentInstr < instructions.size();
-    } catch (const std::exception& e) {
-        logMessage("Error executing instruction: " + std::string(e.what()), coreId);
+    } catch (const std::exception&) {
+        logMessage("Error executing instruction", coreId);
         ++currentInstr;
         ++executedCommands;
         return currentInstr < instructions.size();
