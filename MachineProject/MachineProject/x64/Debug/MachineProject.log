@@ -1,19 +1,100 @@
 ﻿  CommandHandler.cpp
-C:\Users\kendr\Source\Repos\CSOPESY\MachineProject\Process.h(133,36): warning C4101: 'e': unreferenced local variable
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(142,42): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
   (compiling source file 'CommandHandler.cpp')
   
-C:\Users\kendr\Source\Repos\CSOPESY\MachineProject\Process.h(218,64): warning C4267: 'argument': conversion from 'size_t' to '_Ty', possible loss of data
-C:\Users\kendr\Source\Repos\CSOPESY\MachineProject\Process.h(218,64): warning C4267:         with
-C:\Users\kendr\Source\Repos\CSOPESY\MachineProject\Process.h(218,64): warning C4267:         [
-C:\Users\kendr\Source\Repos\CSOPESY\MachineProject\Process.h(218,64): warning C4267:             _Ty=int
-C:\Users\kendr\Source\Repos\CSOPESY\MachineProject\Process.h(218,64): warning C4267:         ]
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(183,36): warning C4101: 'e': unreferenced local variable
   (compiling source file 'CommandHandler.cpp')
   
-C:\Users\kendr\Source\Repos\CSOPESY\MachineProject\Scheduler.h(208,42): warning C4101: 'e': unreferenced local variable
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(298,64): warning C4267: 'argument': conversion from 'size_t' to '_Ty', possible loss of data
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(298,64): warning C4267:         with
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(298,64): warning C4267:         [
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(298,64): warning C4267:             _Ty=int
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(298,64): warning C4267:         ]
   (compiling source file 'CommandHandler.cpp')
   
-C:\Users\kendr\Source\Repos\CSOPESY\MachineProject\Scheduler.h(257,33): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Scheduler.h(208,42): warning C4101: 'e': unreferenced local variable
   (compiling source file 'CommandHandler.cpp')
   
-C:\Users\kendr\Source\Repos\CSOPESY\MachineProject\CommandHandler.cpp(82,44): warning C4101: 'e': unreferenced local variable
-  MachineProject.vcxproj -> C:\Users\kendr\Source\Repos\CSOPESY\MachineProject\x64\Debug\MachineProject.exe
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Scheduler.h(257,33): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
+  (compiling source file 'CommandHandler.cpp')
+  
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\CommandHandler.cpp(141,30): error C2248: 'MemoryManager::processPageTables': cannot access private member declared in class 'MemoryManager'
+      D:\DLSU\CSOPESY\CSOPESY\MachineProject\MemoryManager.h(51,56):
+      see declaration of 'MemoryManager::processPageTables'
+      D:\DLSU\CSOPESY\CSOPESY\MachineProject\MemoryManager.h(26,7):
+      see declaration of 'MemoryManager'
+  
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\CommandHandler.cpp(141,85): error C2248: 'MemoryManager::PageTableEntry': cannot access private struct declared in class 'MemoryManager'
+      D:\DLSU\CSOPESY\CSOPESY\MachineProject\MemoryManager.h(45,12):
+      see declaration of 'MemoryManager::PageTableEntry'
+      D:\DLSU\CSOPESY\CSOPESY\MachineProject\MemoryManager.h(26,7):
+      see declaration of 'MemoryManager'
+  
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\CommandHandler.cpp(147,38): error C2065: 'nextProcessId': undeclared identifier
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\CommandHandler.cpp(147,37): error C2665: 'ProcessInfo::ProcessInfo': no overloaded function could convert all the argument types
+      D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(39,1):
+      could be 'ProcessInfo::ProcessInfo(ProcessInfo &&)'
+          D:\DLSU\CSOPESY\CSOPESY\MachineProject\CommandHandler.cpp(147,37):
+          'ProcessInfo::ProcessInfo(ProcessInfo &&)': cannot convert argument 1 from 'std::string' to 'ProcessInfo &&'
+              D:\DLSU\CSOPESY\CSOPESY\MachineProject\CommandHandler.cpp(147,55):
+              Reason: cannot convert from 'std::string' to 'ProcessInfo'
+              D:\DLSU\CSOPESY\CSOPESY\MachineProject\CommandHandler.cpp(147,55):
+              No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
+      D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(39,1):
+      or       'ProcessInfo::ProcessInfo(const ProcessInfo &)'
+          D:\DLSU\CSOPESY\CSOPESY\MachineProject\CommandHandler.cpp(147,37):
+          'ProcessInfo::ProcessInfo(const ProcessInfo &)': cannot convert argument 1 from 'std::string' to 'const ProcessInfo &'
+              D:\DLSU\CSOPESY\CSOPESY\MachineProject\CommandHandler.cpp(147,55):
+              Reason: cannot convert from 'std::string' to 'const ProcessInfo'
+              D:\DLSU\CSOPESY\CSOPESY\MachineProject\CommandHandler.cpp(147,55):
+              No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
+      D:\DLSU\CSOPESY\CSOPESY\MachineProject\CommandHandler.cpp(147,37):
+      while trying to match the argument list '(std::string)'
+  
+  Console.cpp
+  main.cpp
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(142,42): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+  (compiling source file 'main.cpp')
+  
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(183,36): warning C4101: 'e': unreferenced local variable
+  (compiling source file 'main.cpp')
+  
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(298,64): warning C4267: 'argument': conversion from 'size_t' to '_Ty', possible loss of data
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(298,64): warning C4267:         with
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(298,64): warning C4267:         [
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(298,64): warning C4267:             _Ty=int
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Process.h(298,64): warning C4267:         ]
+  (compiling source file 'main.cpp')
+  
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Scheduler.h(208,42): warning C4101: 'e': unreferenced local variable
+  (compiling source file 'main.cpp')
+  
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\Scheduler.h(257,33): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
+  (compiling source file 'main.cpp')
+  
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\main.cpp(136,22): error C2248: 'MemoryManager::processPageTables': cannot access private member declared in class 'MemoryManager'
+      D:\DLSU\CSOPESY\CSOPESY\MachineProject\MemoryManager.h(51,56):
+      see declaration of 'MemoryManager::processPageTables'
+      D:\DLSU\CSOPESY\CSOPESY\MachineProject\MemoryManager.h(26,7):
+      see declaration of 'MemoryManager'
+  
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\main.cpp(136,77): error C2248: 'MemoryManager::PageTableEntry': cannot access private struct declared in class 'MemoryManager'
+      D:\DLSU\CSOPESY\CSOPESY\MachineProject\MemoryManager.h(45,12):
+      see declaration of 'MemoryManager::PageTableEntry'
+      D:\DLSU\CSOPESY\CSOPESY\MachineProject\MemoryManager.h(26,7):
+      see declaration of 'MemoryManager'
+  
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\main.cpp(170,26): error C2248: 'MemoryManager::processPageTables': cannot access private member declared in class 'MemoryManager'
+      D:\DLSU\CSOPESY\CSOPESY\MachineProject\MemoryManager.h(51,56):
+      see declaration of 'MemoryManager::processPageTables'
+      D:\DLSU\CSOPESY\CSOPESY\MachineProject\MemoryManager.h(26,7):
+      see declaration of 'MemoryManager'
+  
+D:\DLSU\CSOPESY\CSOPESY\MachineProject\main.cpp(170,81): error C2248: 'MemoryManager::PageTableEntry': cannot access private struct declared in class 'MemoryManager'
+      D:\DLSU\CSOPESY\CSOPESY\MachineProject\MemoryManager.h(45,12):
+      see declaration of 'MemoryManager::PageTableEntry'
+      D:\DLSU\CSOPESY\CSOPESY\MachineProject\MemoryManager.h(26,7):
+      see declaration of 'MemoryManager'
+  
+  MemoryManager.cpp
+  Generating Code...
