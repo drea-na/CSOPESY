@@ -54,6 +54,11 @@ std::atomic<bool> generatorRunning(false);
 // global process ID counter
 int nextProcessId = 0;
 
+// Helper function to check if a number is a power of 2
+bool isPowerOfTwo(int n) {
+    return n > 0 && (n & (n - 1)) == 0;
+}
+
 // Read config.txt
 void readConfig() {
     std::ifstream fin("config.txt");
@@ -122,17 +127,17 @@ void readConfig() {
         std::cout << "[config.txt] mem-per-frame out of range (>=1). Using default (16)." << std::endl;
         global_mem_per_frame = 16;
     }
-    if (global_mem_per_proc < 1) {
-        std::cout << "[config.txt] mem-per-proc out of range (>=1). Using default (4096)." << std::endl;
-        global_mem_per_proc = 4096;
-    }
-    if (global_min_mem_per_proc < 64 || global_min_mem_per_proc > 65536) {
-        std::cout << "[config.txt] min-mem-per-proc out of range (64-65536). Using default (64)." << std::endl;
+    if (global_min_mem_per_proc < 64 || global_min_mem_per_proc > 65536 || !isPowerOfTwo(global_min_mem_per_proc)) {
+        std::cout << "[config.txt] min-mem-per-proc out of range (64-65536) or not power of 2. Using default (64)." << std::endl;
         global_min_mem_per_proc = 64;
     }
-    if (global_max_mem_per_proc < global_min_mem_per_proc || global_max_mem_per_proc > 65536) {
-        std::cout << "[config.txt] max-mem-per-proc out of range or less than min-mem-per-proc. Using default (65536)." << std::endl;
+    if (global_max_mem_per_proc < global_min_mem_per_proc || global_max_mem_per_proc > 65536 || !isPowerOfTwo(global_max_mem_per_proc)) {
+        std::cout << "[config.txt] max-mem-per-proc out of range or not power of 2. Using default (65536)." << std::endl;
         global_max_mem_per_proc = 65536;
+    }
+    if (global_mem_per_proc < global_min_mem_per_proc || global_mem_per_proc > global_max_mem_per_proc || !isPowerOfTwo(global_mem_per_proc)) {
+        std::cout << "[config.txt] mem-per-proc out of range or not power of 2. Using default (4096)." << std::endl;
+        global_mem_per_proc = 4096;
     }
 }
 
