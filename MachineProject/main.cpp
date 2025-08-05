@@ -41,6 +41,8 @@ MemoryManager* memoryManager = nullptr;
 int global_max_overall_mem = 16384;
 int global_mem_per_frame = 16;
 int global_mem_per_proc = 4096;
+int global_min_mem_per_proc = 64;
+int global_max_mem_per_proc = 65536;
 
 std::atomic<int> coresUsed(0);
 std::atomic<int> totalCpuCycles(0);
@@ -77,6 +79,8 @@ void readConfig() {
             else if (key == "max-overall-mem") fin >> global_max_overall_mem;
             else if (key == "mem-per-frame") fin >> global_mem_per_frame;
             else if (key == "mem-per-proc") fin >> global_mem_per_proc;
+            else if (key == "min-mem-per-proc") fin >> global_min_mem_per_proc;
+            else if (key == "max-mem-per-proc") fin >> global_max_mem_per_proc;
             // Add more config as needed
             else fin.ignore(1000, '\n');
         }
@@ -121,6 +125,14 @@ void readConfig() {
     if (global_mem_per_proc < 1) {
         std::cout << "[config.txt] mem-per-proc out of range (>=1). Using default (4096)." << std::endl;
         global_mem_per_proc = 4096;
+    }
+    if (global_min_mem_per_proc < 1) {
+        std::cout << "[config.txt] min-mem-per-proc out of range (>=1). Using default (64)." << std::endl;
+        global_min_mem_per_proc = 64;
+    }
+    if (global_max_mem_per_proc < global_min_mem_per_proc) {
+        std::cout << "[config.txt] max-mem-per-proc less than min-mem-per-proc. Setting max-mem-per-proc = min-mem-per-proc." << std::endl;
+        global_max_mem_per_proc = global_min_mem_per_proc;
     }
 }
 

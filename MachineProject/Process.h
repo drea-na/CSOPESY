@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <stdexcept>
 #include <algorithm>
+#include "PageTable.h"
 
 struct ProcessInfo {
     int id;
@@ -77,9 +78,12 @@ public:
     bool memoryAccessViolation = false;
     std::string violationAddress;
     std::string violationTime;
+    
+    // Page table for demand paging
+    PageTable* pageTable;
 
     // Constructor
-    Process(const std::string& processName) : name(processName), totalCommands(0), executedCommands(0) {
+    Process(const std::string& processName) : name(processName), totalCommands(0), executedCommands(0), pageTable(nullptr) {
         // Create logs directory if it doesn't exist
         system("mkdir process_logs 2>nul"); // Windows command, silent error
         
@@ -90,12 +94,18 @@ public:
             throw std::runtime_error("Failed to open log file: " + logPath);
         }
 
+        // Initialize page table for demand paging
+        pageTable = new PageTable(processName);
+
         // random instructions will be generated here later with specific parameters
     }
 
     ~Process() {
         if (logFile.is_open())
             logFile.close();
+        if (pageTable) {
+            delete pageTable;
+        }
     }
 
     // Main execution method - returns true if process should continue
@@ -187,6 +197,36 @@ inline bool Process::isValidMemoryAddress(int address) const {
 }
 
 inline uint16_t Process::readMemory(int address) {
+    // Use page table for address translation if available
+    if (pageTable) {
+        uint32_t physicalAddr;
+        if (pageTable->translateAddress(address, physicalAddr)) {
+            // Address translation successful, check if we have a value
+            auto it = memory.find(physicalAddr);
+            if (it != memory.end()) {
+                return it->second;
+            }
+            return 0; // Valid address but no value stored
+        } else {
+            // Page fault - try to handle it
+            if (pageTable->handlePageFault(address, physicalAddr)) {
+                // Page fault handled successfully
+                auto it = memory.find(physicalAddr);
+                if (it != memory.end()) {
+                    return it->second;
+                }
+                return 0;
+            } else {
+                // Page fault handling failed
+                memoryAccessViolation = true;
+                violationAddress = "0x" + std::to_string(address);
+                violationTime = getCurrentTimestamp();
+                throw std::runtime_error("Memory access violation: Page fault handling failed for address " + violationAddress);
+            }
+        }
+    }
+    
+    // Fallback to direct memory access if no page table
     if (!isValidMemoryAddress(address)) {
         memoryAccessViolation = true;
         violationAddress = "0x" + std::to_string(address);
@@ -203,6 +243,32 @@ inline uint16_t Process::readMemory(int address) {
 }
 
 inline void Process::writeMemory(int address, uint16_t value) {
+    // Use page table for address translation if available
+    if (pageTable) {
+        uint32_t physicalAddr;
+        if (pageTable->translateAddress(address, physicalAddr)) {
+            // Address translation successful, write to physical address
+            memory[physicalAddr] = value;
+            pageTable->setPageDirty(pageTable->virtualToPageNumber(address));
+            return;
+        } else {
+            // Page fault - try to handle it
+            if (pageTable->handlePageFault(address, physicalAddr)) {
+                // Page fault handled successfully, write to physical address
+                memory[physicalAddr] = value;
+                pageTable->setPageDirty(pageTable->virtualToPageNumber(address));
+                return;
+            } else {
+                // Page fault handling failed
+                memoryAccessViolation = true;
+                violationAddress = "0x" + std::to_string(address);
+                violationTime = getCurrentTimestamp();
+                throw std::runtime_error("Memory access violation: Page fault handling failed for address " + violationAddress);
+            }
+        }
+    }
+    
+    // Fallback to direct memory access if no page table
     if (!isValidMemoryAddress(address)) {
         memoryAccessViolation = true;
         violationAddress = "0x" + std::to_string(address);

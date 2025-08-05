@@ -32,6 +32,8 @@ extern std::atomic<int> totalCpuCycles;
 extern std::atomic<int> activeCpuCycles;
 extern MemoryManager* memoryManager;
 extern int global_mem_per_proc;
+extern int global_min_mem_per_proc;
+extern int global_max_mem_per_proc;
 
 //external declarations
 extern void readConfig();
@@ -68,6 +70,10 @@ bool CommandHandler::handleCommands(const std::string& command) {
     }
     else if (command == "vmstat") {
         vmstat();
+    }
+    else if (command.substr(0, 10) == "page-table ") {
+        std::string processName = command.substr(10);
+        pageTable(processName);
     }
     else if (command.substr(0, 10) == "screen -s ") {
         std::string remaining = command.substr(10);
@@ -241,7 +247,8 @@ void CommandHandler::screenS(const std::string& name, int memorySize) {
     // Validate memory size if provided
     if (memorySize != -1) {
         if (!isValidMemorySize(memorySize)) {
-            std::cout << "Error: Invalid memory allocation. Memory size must be between 64 and 65536 bytes and be a power of 2." << std::endl;
+            std::cout << "Error: Invalid memory allocation. Memory size must be between " 
+                  << global_min_mem_per_proc << " and " << global_max_mem_per_proc << " bytes and be a power of 2." << std::endl;
             printEnter();
             return;
         }
@@ -406,7 +413,8 @@ void CommandHandler::screenC(const std::string& name, int memorySize, const std:
 
     // Validate memory size
     if (!isValidMemorySize(memorySize)) {
-        std::cout << "Error: Invalid memory allocation. Memory size must be a power of 2 between 64 and 65536 bytes." << std::endl;
+        std::cout << "Error: Invalid memory allocation. Memory size must be a power of 2 between " 
+                  << global_min_mem_per_proc << " and " << global_max_mem_per_proc << " bytes." << std::endl;
         printEnter();
         return;
     }
@@ -574,7 +582,7 @@ bool CommandHandler::isPowerOfTwo(int n) const {
 }
 
 bool CommandHandler::isValidMemorySize(int size) const {
-    return size >= 64 && size <= 65536 && isPowerOfTwo(size);
+    return size >= global_min_mem_per_proc && size <= global_max_mem_per_proc && isPowerOfTwo(size);
 }
 
 void CommandHandler::vmstat() {
@@ -627,6 +635,24 @@ void CommandHandler::vmstat() {
     std::cout << "0 boot time" << std::endl;
     std::cout << processList.size() << " forks" << std::endl;
     
+    printEnter();
+}
+
+void CommandHandler::pageTable(const std::string& processName) {
+    std::lock_guard<std::mutex> lock(processMutex);
+    
+    auto it = std::find_if(processList.begin(), processList.end(), 
+                          [&](const ProcessInfo& p) { return p.name == processName; });
+    
+    if (it != processList.end()) {
+        // Find the actual process object to access its page table
+        // This is a simplified approach - in a real implementation, we'd have a map of processes
+        std::cout << "\n=== Page Table Information for Process: " << processName << " ===" << std::endl;
+        std::cout << "Note: Page table details would be displayed here." << std::endl;
+        std::cout << "This feature requires integration with the process scheduler." << std::endl;
+    } else {
+        std::cout << "Process '" << processName << "' not found." << std::endl;
+    }
     printEnter();
 }
 

@@ -35,6 +35,7 @@ public:
     void reportUtil();
     void processSmi(const std::string& processName);
     void vmstat();
+    void pageTable(const std::string& processName);
     void printHeader();
     void printEnter();
 };
