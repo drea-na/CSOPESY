@@ -142,13 +142,13 @@ void generateDummyProcess(const std::string& name) {
     int memSize = global_mem_per_proc;
     Process* p = new Process(name, memoryManager);
     p->generateRandomInstructions(global_min_ins, global_max_ins);
-    // Initialize page table for this process
+    // Initialize page table for this process BEFORE adding to scheduler
     if (memoryManager) {
         int numPages = (memSize + memoryManager->getFrameSize() - 1) / memoryManager->getFrameSize();
         memoryManager->getProcessPageTables()[name] = std::vector<MemoryManager::PageTableEntry>(numPages);
     }
     if (scheduler) {
-        scheduler->addProcess(p);
+        scheduler->addProcessWithMemory(p, memSize);
         // Add to process tracking list
         {
             std::lock_guard<std::mutex> lock(processMutex);
@@ -266,7 +266,7 @@ int main() {
     readConfig();
 
     // Initialize memory manager
-    memoryManager = new MemoryManager(global_max_overall_mem, global_mem_per_frame, global_mem_per_proc);
+    memoryManager = new MemoryManager(global_max_overall_mem, global_mem_per_frame, global_max_mem_per_proc);
 
     CommandHandler handler(screenMap, scheduler);
     bool running = true;

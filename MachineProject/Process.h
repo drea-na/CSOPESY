@@ -393,10 +393,11 @@ inline void Process::generateRandomInstructions(int minIns, int maxIns) {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> insDist(minIns, maxIns);
-    std::uniform_int_distribution<> typeDist(0, 4);
+    std::uniform_int_distribution<> typeDist(0, 6); // Increased to include READ and WRITE
     std::uniform_int_distribution<> varDist(0, varNames.size() - 1);
     std::uniform_int_distribution<> valDist(1, 100);
     std::uniform_int_distribution<> sleepDist(1, 5);
+    std::uniform_int_distribution<> addrDist(0, 1023); // Memory addresses 0-1023 (within process memory)
 
     int numInstructions = insDist(gen);
     instructions.clear();
@@ -437,6 +438,18 @@ inline void Process::generateRandomInstructions(int minIns, int maxIns) {
         case 4: // SLEEP
             instr.type = InstrType::SLEEP;
             instr.args.push_back(std::to_string(sleepDist(gen)));
+            break;
+
+        case 5: // READ - Generate memory access to trigger paging
+            instr.type = InstrType::READ;
+            instr.args.push_back(varNames[varDist(gen)]); // variable to store result
+            instr.args.push_back("0x" + std::to_string(addrDist(gen))); // random memory address
+            break;
+
+        case 6: // WRITE - Generate memory access to trigger paging
+            instr.type = InstrType::WRITE;
+            instr.args.push_back("0x" + std::to_string(addrDist(gen))); // random memory address
+            instr.args.push_back(std::to_string(valDist(gen))); // value to write
             break;
         }
 

@@ -188,7 +188,7 @@ void CommandHandler::initialize() {
         delete scheduler;
     }
 
-    scheduler = new Scheduler(global_core_count, global_algo, memoryManager, global_mem_per_proc, global_quantum);
+                    scheduler = new Scheduler(global_core_count, global_algo, memoryManager, global_max_mem_per_proc, global_quantum);
     std::cout << "Scheduler initialized: ";
     std::cout << (global_algo == SchedulingAlgorithm::FCFS ? "FCFS" : "RR");
     std::cout << ", cores: " << global_core_count << ", quantum: " << global_quantum << std::endl;
