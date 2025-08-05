@@ -3,15 +3,15 @@
   "WorkspaceRootPath": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\CommandHandler.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:CommandHandler.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\include\\utility||{3B902123-F8A7-4915-9F01-361F908088D0}|"
     },
     {
       "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\Scheduler.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:Scheduler.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\CommandHandler.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:CommandHandler.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\CommandHandler.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
@@ -41,18 +41,17 @@
       "DocumentGroups": [
         {
           "DockedWidth": 232,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 2,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "utility",
               "DocumentMoniker": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\include\\utility",
               "ToolTip": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\include\\utility",
               "ViewState": "AgIAAPYCAAAAAAAAAAAYwAQDAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2025-08-04T16:57:44.535Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-08-04T16:57:44.535Z"
             },
             {
               "$type": "Document",
@@ -64,18 +63,17 @@
               "RelativeToolTip": "CommandHandler.h",
               "ViewState": "AgIAAA8AAAAAAAAAAAAAAAwAAAAmAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2025-06-21T07:37:02.253Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-06-21T07:37:02.253Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 0,
               "Title": "CommandHandler.cpp",
               "DocumentMoniker": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\CommandHandler.cpp",
               "RelativeDocumentMoniker": "CommandHandler.cpp",
               "ToolTip": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\CommandHandler.cpp",
               "RelativeToolTip": "CommandHandler.cpp",
-              "ViewState": "AgIAAEUAAAAAAAAAAAAAAHsBAAArAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAAmAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2025-06-27T02:49:40.803Z",
               "EditorCaption": ""
@@ -90,8 +88,7 @@
               "RelativeToolTip": "Console.h",
               "ViewState": "AgIAABgAAAAAAAAAAAAAAC8AAAAFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2025-05-26T12:19:09.188Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-05-26T12:19:09.188Z"
             },
             {
               "$type": "Document",
@@ -103,8 +100,7 @@
               "RelativeToolTip": "Console.cpp",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAACEAAAAiAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
-              "WhenOpened": "2025-06-21T10:47:22.688Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-06-21T10:47:22.688Z"
             },
             {
               "$type": "Document",
@@ -116,12 +112,11 @@
               "RelativeToolTip": "Process.h",
               "ViewState": "AgIAAEMBAAAAAAAAAAAAANgAAAAzAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2025-06-14T06:59:21.78Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-06-14T06:59:21.78Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "Scheduler.h",
               "DocumentMoniker": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\Scheduler.h",
               "RelativeDocumentMoniker": "Scheduler.h",
@@ -129,8 +124,7 @@
               "RelativeToolTip": "Scheduler.h",
               "ViewState": "AgIAAEgAAAAAAAAAAAAYwFYAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2025-06-14T06:59:47.674Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-06-14T06:59:47.674Z"
             },
             {
               "$type": "Document",
@@ -142,8 +136,7 @@
               "RelativeToolTip": "main.cpp",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAIMAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
-              "WhenOpened": "2025-05-16T15:25:35.335Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-05-16T15:25:35.335Z"
             }
           ]
         }

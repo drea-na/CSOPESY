@@ -175,10 +175,43 @@ inline bool Process::executeNextInstruction(int coreId) {
 
         switch (instr.type) {
         case InstrType::PRINT: {
-            std::string msg = "Hello world from " + name + "!";
-            if (!instr.args.empty() && variables.count(instr.args[0])) {
-                msg += " " + instr.args[0] + "=" + std::to_string(variables[instr.args[0]]);
+            std::string msg = instr.args.empty() ? "Hello world from " + name + "!" : instr.args[0];
+            
+            // Handle string concatenation with + operator
+            size_t plusPos = msg.find(" + ");
+            if (plusPos != std::string::npos) {
+                std::string leftPart = msg.substr(0, plusPos);
+                std::string rightPart = msg.substr(plusPos + 3); // Skip " + "
+                
+                // Process left part (remove quotes if present)
+                if (leftPart.length() >= 2 && leftPart[0] == '"' && leftPart[leftPart.length()-1] == '"') {
+                    leftPart = leftPart.substr(1, leftPart.length()-2);
+                }
+                
+                // Process right part (variable substitution)
+                if (variables.count(rightPart)) {
+                    rightPart = std::to_string(variables[rightPart]);
+                }
+                
+                msg = leftPart + rightPart;
+            } else {
+                // Remove quotes if present for simple messages
+                if (msg.length() >= 2 && msg[0] == '"' && msg[msg.length()-1] == '"') {
+                    msg = msg.substr(1, msg.length()-2);
+                }
+                
+                // Simple variable substitution for single variables
+                for (const auto& var : variables) {
+                    std::string varPattern = var.first;
+                    std::string varValue = std::to_string(var.second);
+                    size_t pos = 0;
+                    while ((pos = msg.find(varPattern, pos)) != std::string::npos) {
+                        msg.replace(pos, varPattern.length(), varValue);
+                        pos += varValue.length();
+                    }
+                }
             }
+            
             logMessage(msg, coreId);
             break;
         }
@@ -243,7 +276,13 @@ inline bool Process::executeNextInstruction(int coreId) {
             if (instr.args.size() >= 2 && memoryManager != nullptr) {
                 try {
                     uint32_t address = std::stoul(instr.args[0], nullptr, 16); // Parse hex address
-                    uint16_t value = std::stoul(instr.args[1]);
+                    uint16_t value;
+                    // Check if the second argument is a variable name or a direct value
+                    if (variables.count(instr.args[1])) {
+                        value = variables[instr.args[1]];
+                    } else {
+                        value = std::stoul(instr.args[1]);
+                    }
                     if (memoryManager->writeMemory(processId, address, value)) {
                         logMessage("WRITE " + std::to_string(value) + " to 0x" + instr.args[0], coreId);
                     } else {

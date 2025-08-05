@@ -332,18 +332,59 @@ void CommandHandler::screenC(const std::string& name, int memorySize, const std:
     
     // Parse instructions (1-50 semicolon-separated)
     std::vector<std::string> instructionList;
-    std::stringstream ss(instructions);
-    std::string instruction;
+    
+    // Debug: Print the original instructions string
+    std::cout << "DEBUG: Original instructions: '" << instructions << "'" << std::endl;
+    
+    // Handle semicolon separation while respecting quoted strings
+    std::string currentInstruction;
+    bool inQuotes = false;
+    bool escaped = false;
     int count = 0;
     
-    while (std::getline(ss, instruction, ';') && count < 50) {
-        // Trim whitespace
-        instruction.erase(0, instruction.find_first_not_of(" \t"));
-        instruction.erase(instruction.find_last_not_of(" \t") + 1);
-        if (!instruction.empty()) {
-            instructionList.push_back(instruction);
+    for (size_t i = 0; i < instructions.length() && count < 50; ++i) {
+        char c = instructions[i];
+        
+        if (escaped) {
+            currentInstruction += c;
+            escaped = false;
+        } else if (c == '\\') {
+            escaped = true;
+            currentInstruction += c;
+        } else if (c == '"') {
+            inQuotes = !inQuotes;
+            currentInstruction += c;
+        } else if (c == ';' && !inQuotes) {
+            // End of instruction
+            if (!currentInstruction.empty()) {
+                // Trim whitespace
+                currentInstruction.erase(0, currentInstruction.find_first_not_of(" \t"));
+                currentInstruction.erase(currentInstruction.find_last_not_of(" \t") + 1);
+                if (!currentInstruction.empty()) {
+                    instructionList.push_back(currentInstruction);
+                    count++;
+                }
+            }
+            currentInstruction.clear();
+        } else {
+            currentInstruction += c;
+        }
+    }
+    
+    // Add the last instruction if there is one
+    if (!currentInstruction.empty() && count < 50) {
+        currentInstruction.erase(0, currentInstruction.find_first_not_of(" \t"));
+        currentInstruction.erase(currentInstruction.find_last_not_of(" \t") + 1);
+        if (!currentInstruction.empty()) {
+            instructionList.push_back(currentInstruction);
             count++;
         }
+    }
+    
+    // Debug: Print the parsed instructions
+    std::cout << "DEBUG: Parsed " << instructionList.size() << " instructions:" << std::endl;
+    for (size_t i = 0; i < instructionList.size(); ++i) {
+        std::cout << "DEBUG: [" << i << "] '" << instructionList[i] << "'" << std::endl;
     }
     
     if (instructionList.empty()) {
@@ -389,9 +430,25 @@ void CommandHandler::screenC(const std::string& name, int memorySize, const std:
                 instrStream >> var1 >> var2 >> var3;
                 p->addInstruction(Process::InstrType::SUBTRACT, {var1, var2, var3});
             } else if (op == "PRINT") {
-                std::string varName;
-                instrStream >> varName;
-                p->addInstruction(Process::InstrType::PRINT, {varName});
+                // For PRINT, handle the parentheses and quotes properly
+                std::string message;
+                std::getline(instrStream, message);
+                // Trim leading whitespace
+                message.erase(0, message.find_first_not_of(" \t"));
+                
+                // Remove outer parentheses if present
+                if (message.length() >= 2 && message[0] == '(' && message[message.length()-1] == ')') {
+                    message = message.substr(1, message.length()-2);
+                }
+                
+                // Handle escaped quotes - replace \" with "
+                size_t pos = 0;
+                while ((pos = message.find("\\\"", pos)) != std::string::npos) {
+                    message.replace(pos, 2, "\"");
+                    pos += 1;
+                }
+                
+                p->addInstruction(Process::InstrType::PRINT, {message});
             } else if (op == "SLEEP") {
                 std::string ticks;
                 instrStream >> ticks;
