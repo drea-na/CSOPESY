@@ -3,11 +3,26 @@
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
+#include <cstring>
 
 MemoryManager::MemoryManager(int totalMem, int frameSz, int maxMemPerProc)
     : totalMemory(totalMem), frameSize(frameSz), maxMemoryPerProcess(maxMemPerProc), currentQuantumCycle(0) {
-    // Initialize with one free block covering the entire memory
+    // Initialize with one free block covering the entire memory (legacy)
     memoryBlocks.push_back(MemoryBlock(0, totalMemory, "", false));
+    // Initialize frame table
+    int numFrames = totalMemory / frameSize;
+    for (int i = 0; i < numFrames; ++i) {
+        frameTable.emplace_back(i);
+    }
+    // Open/create backing store file
+    backingStoreFile.open(backingStoreFileName, std::ios::in | std::ios::out | std::ios::binary | std::ios::trunc);
+    if (!backingStoreFile.is_open()) {
+        // Try to create if not exists
+        backingStoreFile.open(backingStoreFileName, std::ios::out | std::ios::binary);
+        backingStoreFile.close();
+        backingStoreFile.open(backingStoreFileName, std::ios::in | std::ios::out | std::ios::binary);
+    }
+    nextBackingStoreOffset = 0;
 }
 
 bool MemoryManager::allocateMemory(const std::string& processName, int requiredSize) {
@@ -168,4 +183,138 @@ void MemoryManager::writeMemorySnapshotToFile(const std::string& filename, int q
     file << std::endl;
 
     file.close();
+}
+
+// Demand paging: memory access
+bool MemoryManager::accessMemory(const std::string& processName, int virtualAddress, bool isWrite, uint16_t* value) {
+    std::lock_guard<std::mutex> lock(memoryMutex);
+    int pageNumber = virtualAddress / frameSize;
+    int offset = virtualAddress % frameSize;
+    auto& pageTable = processPageTables[processName];
+    if (pageNumber >= (int)pageTable.size()) return false; // Out of bounds
+    if (!pageTable[pageNumber].valid) {
+        pageFaultHandler(processName, pageNumber);
+    }
+    int frameNum = pageTable[pageNumber].frameNumber;
+    if (frameNum < 0 || frameNum >= (int)frameTable.size()) return false;
+    // Simulate physical memory as a static array (for demo)
+    static std::vector<uint8_t> physicalMemory(totalMemory, 0);
+    int physAddr = frameNum * frameSize + offset;
+    if (isWrite) {
+        if (value) {
+            // Write 2 bytes (uint16_t)
+            if (physAddr + 1 >= (int)physicalMemory.size()) return false;
+            uint16_t v = *value;
+            physicalMemory[physAddr] = v & 0xFF;
+            physicalMemory[physAddr + 1] = (v >> 8) & 0xFF;
+        }
+    } else {
+        if (value) {
+            if (physAddr + 1 >= (int)physicalMemory.size()) return false;
+            *value = physicalMemory[physAddr] | (physicalMemory[physAddr + 1] << 8);
+        }
+    }
+    return true;
+}
+
+void MemoryManager::pageFaultHandler(const std::string& processName, int pageNumber) {
+    // Find a free frame
+    int freeFrame = -1;
+    for (auto& frame : frameTable) {
+        if (frame.isFree) {
+            freeFrame = frame.frameNumber;
+            break;
+        }
+    }
+    if (freeFrame == -1) {
+        // No free frame, need to evict
+        swapOutPage();
+        // Try again
+        for (auto& frame : frameTable) {
+            if (frame.isFree) {
+                freeFrame = frame.frameNumber;
+                break;
+            }
+        }
+    }
+    // Load page into free frame
+    frameTable[freeFrame].isFree = false;
+    frameTable[freeFrame].processName = processName;
+    frameTable[freeFrame].pageNumber = pageNumber;
+    processPageTables[processName][pageNumber].valid = true;
+    processPageTables[processName][pageNumber].frameNumber = freeFrame;
+    loadedPages.push({processName, pageNumber});
+    // If page was in backing store, load it
+    if (processPageTables[processName][pageNumber].backingStoreOffset != -1) {
+        loadPageFromBackingStore(processName, pageNumber);
+    }
+}
+
+void MemoryManager::swapOutPage() {
+    // FIFO: evict the oldest loaded page
+    if (loadedPages.empty()) return;
+    auto victim = loadedPages.front(); loadedPages.pop();
+    const std::string& proc = victim.first;
+    int pageNum = victim.second;
+    int frameNum = processPageTables[proc][pageNum].frameNumber;
+    // Write to backing store
+    writePageToBackingStore(proc, pageNum);
+    // Mark frame as free
+    frameTable[frameNum].isFree = true;
+    frameTable[frameNum].processName = "";
+    frameTable[frameNum].pageNumber = -1;
+    // Update page table
+    processPageTables[proc][pageNum].valid = false;
+    processPageTables[proc][pageNum].frameNumber = -1;
+}
+
+void MemoryManager::writePageToBackingStore(const std::string& processName, int pageNumber) {
+    // Simulate physical memory as a static array
+    static std::vector<uint8_t> physicalMemory(totalMemory, 0);
+    int frameNum = processPageTables[processName][pageNumber].frameNumber;
+    int physAddr = frameNum * frameSize;
+    // Write frameSize bytes to backing store
+    backingStoreFile.seekp(nextBackingStoreOffset, std::ios::beg);
+    backingStoreFile.write(reinterpret_cast<char*>(&physicalMemory[physAddr]), frameSize);
+    backingStoreFile.flush();
+    processPageTables[processName][pageNumber].backingStoreOffset = nextBackingStoreOffset;
+    nextBackingStoreOffset += frameSize;
+}
+
+void MemoryManager::loadPageFromBackingStore(const std::string& processName, int pageNumber) {
+    // Simulate physical memory as a static array
+    static std::vector<uint8_t> physicalMemory(totalMemory, 0);
+    int frameNum = processPageTables[processName][pageNumber].frameNumber;
+    int physAddr = frameNum * frameSize;
+    int offset = processPageTables[processName][pageNumber].backingStoreOffset;
+    if (offset == -1) return; // Nothing to load
+    backingStoreFile.seekg(offset, std::ios::beg);
+    backingStoreFile.read(reinterpret_cast<char*>(&physicalMemory[physAddr]), frameSize);
+    // After loading, clear backing store offset
+    processPageTables[processName][pageNumber].backingStoreOffset = -1;
+}
+
+void MemoryManager::removeProcessPages(const std::string& processName) {
+    // Free all frames and page table entries for this process
+    auto it = processPageTables.find(processName);
+    if (it != processPageTables.end()) {
+        for (size_t i = 0; i < it->second.size(); ++i) {
+            if (it->second[i].valid) {
+                int frameNum = it->second[i].frameNumber;
+                if (frameNum >= 0 && frameNum < (int)frameTable.size()) {
+                    frameTable[frameNum].isFree = true;
+                    frameTable[frameNum].processName = "";
+                    frameTable[frameNum].pageNumber = -1;
+                }
+            }
+        }
+        processPageTables.erase(it);
+    }
+    // Remove from loadedPages queue
+    std::queue<std::pair<std::string, int>> newQueue;
+    while (!loadedPages.empty()) {
+        auto entry = loadedPages.front(); loadedPages.pop();
+        if (entry.first != processName) newQueue.push(entry);
+    }
+    loadedPages = std::move(newQueue);
 }

@@ -127,8 +127,14 @@ void readConfig() {
 void generateDummyProcess(const std::string& name) {
     // Place process logs in process_logs/
     system("mkdir process_logs >nul 2>&1"); // Windows: suppress output if exists
-    Process* p = new Process(name);
+    int memSize = global_mem_per_proc;
+    Process* p = new Process(name, memoryManager);
     p->generateRandomInstructions(global_min_ins, global_max_ins);
+    // Initialize page table for this process
+    if (memoryManager) {
+        int numPages = (memSize + memoryManager->getFrameSize() - 1) / memoryManager->getFrameSize();
+        memoryManager->processPageTables[name] = std::vector<MemoryManager::PageTableEntry>(numPages);
+    }
     if (scheduler) {
         scheduler->addProcess(p);
         // Add to process tracking list
@@ -150,7 +156,7 @@ void generateDummyProcess(const std::string& name) {
 void generateDummyProcessWithMemory(const std::string& name, int memorySize) {
     // Place process logs in process_logs/
     system("mkdir process_logs >nul 2>&1"); // Windows: suppress output if exists
-    Process* p = new Process(name);
+    Process* p = new Process(name, memoryManager);
     p->generateRandomInstructions(global_min_ins, global_max_ins);
     
     // Set the memory size for this process (this will be used by the memory manager)
@@ -158,6 +164,11 @@ void generateDummyProcessWithMemory(const std::string& name, int memorySize) {
     if (scheduler) {
         // Use the custom memory size instead of the default global_mem_per_proc
         scheduler->addProcessWithMemory(p, memorySize);
+        // Initialize page table for this process
+        if (memoryManager) {
+            int numPages = (memorySize + memoryManager->getFrameSize() - 1) / memoryManager->getFrameSize();
+            memoryManager->processPageTables[name] = std::vector<MemoryManager::PageTableEntry>(numPages);
+        }
         // Add to process tracking list
         {
             std::lock_guard<std::mutex> lock(processMutex);

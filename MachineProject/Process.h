@@ -13,6 +13,7 @@
 #include <random>
 #include <cstdint>
 #include <stdexcept>
+#include "MemoryManager.h"
 
 struct ProcessInfo {
     int id;
@@ -43,6 +44,7 @@ public:
     int totalCommands;
     int executedCommands;
     std::ofstream logFile;
+    MemoryManager* memoryManager = nullptr; // Reference to memory manager
 
     enum class InstrType {
         PRINT,
@@ -50,7 +52,9 @@ public:
         ADD,
         SUBTRACT,
         SLEEP,
-        FOR
+        FOR,
+        READ,   // New
+        WRITE   // New
     };
 
     struct Instruction {
@@ -62,13 +66,16 @@ public:
 
     // Core data
     std::vector<Instruction> instructions;
-    std::map<std::string, uint16_t> variables;
+    // Symbol table: 32 uint16_t variables (64 bytes)
+    uint16_t symbolTable[32] = {0};
+    std::map<std::string, int> symbolIndex; // variable name -> index in symbolTable
+    int symbolCount = 0;
     int currentInstr = 0;
     int sleepTicks = 0;
     bool isFinished = false;
 
     // Constructor
-    Process(const std::string& processName) : name(processName), totalCommands(0), executedCommands(0) {
+    Process(const std::string& processName, MemoryManager* memMgr = nullptr) : name(processName), totalCommands(0), executedCommands(0), memoryManager(memMgr) {
         // Create logs directory if it doesn't exist
         system("mkdir process_logs 2>nul"); // Windows command, silent error
         
@@ -104,15 +111,58 @@ public:
         return (double)executedCommands / instructions.size() * 100.0;
     }
 
+    // New: symbol table helpers
+    int getSymbolIndex(const std::string& var) {
+        if (symbolIndex.count(var)) return symbolIndex[var];
+        if (symbolCount >= 32) throw std::runtime_error("Symbol table full");
+        symbolIndex[var] = symbolCount;
+        return symbolCount++;
+    }
+    void setSymbol(const std::string& var, uint16_t value) {
+        int idx = getSymbolIndex(var);
+        symbolTable[idx] = value;
+    }
+    uint16_t getSymbol(const std::string& var) {
+        int idx = getSymbolIndex(var);
+        return symbolTable[idx];
+    }
+
+    // Parse user instructions from a semicolon-separated string
+    void parseUserInstructions(const std::string& instrStr) {
+        instructions.clear();
+        size_t start = 0, end = 0;
+        while ((end = instrStr.find(';', start)) != std::string::npos) {
+            std::string instr = instrStr.substr(start, end - start);
+            parseSingleInstruction(instr);
+            start = end + 1;
+        }
+        if (start < instrStr.size()) {
+            parseSingleInstruction(instrStr.substr(start));
+        }
+        totalCommands = instructions.size();
+        executedCommands = 0;
+        currentInstr = 0;
+        sleepTicks = 0;
+        isFinished = false;
+    }
+
 private:
     void setVariable(const std::string& var, int value);
     void logMessage(const std::string& message, int coreId);
+    void parseSingleInstruction(const std::string& instr);
 };
 
 inline void Process::setVariable(const std::string& var, int value) {
     if (value < 0) value = 0;
     if (value > 65535) value = 65535;
-    variables[var] = static_cast<uint16_t>(value);
+    // This function is no longer used for symbol table, but kept for compatibility
+    // if (variables.count(var)) {
+    //     variables[var] = static_cast<uint16_t>(value);
+    // } else {
+    //     // This case should ideally not happen if setSymbol is used consistently
+    //     // For now, we'll just set it to 0 or throw an error
+    //     // throw std::runtime_error("Variable not found in symbol table: " + var);
+    // }
 }
 
 inline void Process::logMessage(const std::string& message, int coreId) {
@@ -138,23 +188,19 @@ inline bool Process::executeNextInstruction(int coreId) {
     // Handle sleep state
     if (sleepTicks > 0) {
         --sleepTicks;
-        return true; // Still running, just sleeping
+        return true;
     }
-
-    // Check if finished
     if (currentInstr >= instructions.size()) {
         isFinished = true;
         return false;
     }
-
     try {
         const Instruction& instr = instructions[currentInstr];
-
         switch (instr.type) {
         case InstrType::PRINT: {
             std::string msg = "Hello world from " + name + "!";
-            if (!instr.args.empty() && variables.count(instr.args[0])) {
-                msg += " " + instr.args[0] + "=" + std::to_string(variables[instr.args[0]]);
+            if (!instr.args.empty() && symbolIndex.count(instr.args[0])) {
+                msg += " " + instr.args[0] + "=" + std::to_string(getSymbol(instr.args[0]));
             }
             logMessage(msg, coreId);
             break;
@@ -162,23 +208,23 @@ inline bool Process::executeNextInstruction(int coreId) {
         case InstrType::DECLARE: {
             if (instr.args.size() >= 2) {
                 int val = std::stoi(instr.args[1]);
-                setVariable(instr.args[0], val);
+                setSymbol(instr.args[0], val);
             }
             break;
         }
         case InstrType::ADD: {
             if (instr.args.size() >= 3) {
-                int v2 = variables.count(instr.args[1]) ? variables[instr.args[1]] : std::stoi(instr.args[1]);
-                int v3 = variables.count(instr.args[2]) ? variables[instr.args[2]] : std::stoi(instr.args[2]);
-                setVariable(instr.args[0], v2 + v3);
+                int v2 = symbolIndex.count(instr.args[1]) ? getSymbol(instr.args[1]) : std::stoi(instr.args[1]);
+                int v3 = symbolIndex.count(instr.args[2]) ? getSymbol(instr.args[2]) : std::stoi(instr.args[2]);
+                setSymbol(instr.args[0], v2 + v3);
             }
             break;
         }
         case InstrType::SUBTRACT: {
             if (instr.args.size() >= 3) {
-                int v2 = variables.count(instr.args[1]) ? variables[instr.args[1]] : std::stoi(instr.args[1]);
-                int v3 = variables.count(instr.args[2]) ? variables[instr.args[2]] : std::stoi(instr.args[2]);
-                setVariable(instr.args[0], v2 - v3);
+                int v2 = symbolIndex.count(instr.args[1]) ? getSymbol(instr.args[1]) : std::stoi(instr.args[1]);
+                int v3 = symbolIndex.count(instr.args[2]) ? getSymbol(instr.args[2]) : std::stoi(instr.args[2]);
+                setSymbol(instr.args[0], v2 - v3);
             }
             break;
         }
@@ -196,8 +242,42 @@ inline bool Process::executeNextInstruction(int coreId) {
             }
             break;
         }
+        case InstrType::READ: {
+            // READ(var, address)
+            if (instr.args.size() >= 2 && memoryManager) {
+                const std::string& var = instr.args[0];
+                int address = std::stoi(instr.args[1], nullptr, 16); // hex address
+                uint16_t value = 0;
+                bool ok = memoryManager->accessMemory(name, address, false, &value);
+                if (!ok) {
+                    logMessage("Memory access violation at address " + instr.args[1], coreId);
+                    isFinished = true;
+                    return false;
+                }
+                setSymbol(var, value);
+            }
+            break;
         }
-
+        case InstrType::WRITE: {
+            // WRITE(address, value)
+            if (instr.args.size() >= 2 && memoryManager) {
+                int address = std::stoi(instr.args[0], nullptr, 16); // hex address
+                uint16_t value = 0;
+                if (symbolIndex.count(instr.args[1])) {
+                    value = getSymbol(instr.args[1]);
+                } else {
+                    value = static_cast<uint16_t>(std::stoi(instr.args[1]));
+                }
+                bool ok = memoryManager->accessMemory(name, address, true, &value);
+                if (!ok) {
+                    logMessage("Memory access violation at address " + instr.args[0], coreId);
+                    isFinished = true;
+                    return false;
+                }
+            }
+            break;
+        }
+        }
         ++currentInstr;
         ++executedCommands;
         return currentInstr < instructions.size();

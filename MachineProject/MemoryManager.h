@@ -9,6 +9,8 @@
 #include <iomanip>
 #include <sstream>
 #include <mutex>
+#include <map>
+#include <queue>
 
 struct MemoryBlock {
     int startAddress;
@@ -30,6 +32,30 @@ private:
     mutable std::mutex memoryMutex;
     int currentQuantumCycle;
 
+    // Demand paging structures
+    struct FrameEntry {
+        int frameNumber;
+        std::string processName;
+        int pageNumber;
+        bool isFree;
+        FrameEntry(int num) : frameNumber(num), processName(""), pageNumber(-1), isFree(true) {}
+    };
+    std::vector<FrameEntry> frameTable; // All physical frames
+
+    struct PageTableEntry {
+        bool valid; // in memory?
+        int frameNumber; // if valid
+        int backingStoreOffset; // if swapped out
+        PageTableEntry() : valid(false), frameNumber(-1), backingStoreOffset(-1) {}
+    };
+    std::map<std::string, std::vector<PageTableEntry>> processPageTables; // processName -> page table
+
+    std::queue<std::pair<std::string, int>> loadedPages; // FIFO: (processName, pageNumber)
+
+    std::fstream backingStoreFile; // csopesy-backing-store.txt
+    std::string backingStoreFileName = "csopesy-backing-store.txt";
+    int nextBackingStoreOffset = 0;
+
 public:
     MemoryManager(int totalMem = 16384, int frameSz = 16, int maxMemPerProc = 4096);
 
@@ -48,6 +74,14 @@ public:
     // File output methods
     void generateMemorySnapshot(int quantumCycle);
     void setCurrentQuantumCycle(int cycle) { currentQuantumCycle = cycle; }
+
+    // Demand paging methods
+    bool accessMemory(const std::string& processName, int virtualAddress, bool isWrite, uint16_t* value = nullptr);
+    void pageFaultHandler(const std::string& processName, int pageNumber);
+    void swapOutPage();
+    void loadPageFromBackingStore(const std::string& processName, int pageNumber);
+    void writePageToBackingStore(const std::string& processName, int pageNumber);
+    void removeProcessPages(const std::string& processName);
 
 
 private:

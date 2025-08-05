@@ -94,6 +94,104 @@ bool CommandHandler::handleCommands(const std::string& command) {
         std::string name = command.substr(10);
         screenR(name);
     }
+    else if (command.substr(0, 10) == "screen -c ") {
+        // Format: screen -c <process_name> <memory_size> "<instructions>"
+        std::string remaining = command.substr(10);
+        size_t firstSpace = remaining.find(' ');
+        if (firstSpace == std::string::npos) {
+            std::cout << "Error: Missing process name or memory size." << std::endl;
+            printEnter();
+            return false;
+        }
+        std::string name = remaining.substr(0, firstSpace);
+        std::string afterName = remaining.substr(firstSpace + 1);
+        size_t secondSpace = afterName.find(' ');
+        if (secondSpace == std::string::npos) {
+            std::cout << "Error: Missing memory size or instructions." << std::endl;
+            printEnter();
+            return false;
+        }
+        std::string memorySizeStr = afterName.substr(0, secondSpace);
+        std::string instructionsStr = afterName.substr(secondSpace + 1);
+        // Remove quotes if present
+        if (!instructionsStr.empty() && instructionsStr.front() == '"' && instructionsStr.back() == '"') {
+            instructionsStr = instructionsStr.substr(1, instructionsStr.size() - 2);
+        }
+        int memorySize = -1;
+        try {
+            memorySize = std::stoi(memorySizeStr);
+        } catch (...) {
+            std::cout << "Error: Invalid memory size format. Please provide a valid number." << std::endl;
+            printEnter();
+            return false;
+        }
+        if (!isValidMemorySize(memorySize)) {
+            std::cout << "Error: Invalid memory allocation. Memory size must be between 64 and 65536 bytes and be a power of 2." << std::endl;
+            printEnter();
+            return false;
+        }
+        // Create process with instructions
+        try {
+            // Create process and parse instructions
+            Process* p = new Process(name, memoryManager);
+            p->parseUserInstructions(instructionsStr);
+            // Initialize page table for this process
+            if (memoryManager) {
+                int numPages = (memorySize + memoryManager->getFrameSize() - 1) / memoryManager->getFrameSize();
+                memoryManager->processPageTables[name] = std::vector<MemoryManager::PageTableEntry>(numPages);
+            }
+            if (scheduler) {
+                scheduler->addProcessWithMemory(p, memorySize);
+                {
+                    std::lock_guard<std::mutex> lock(processMutex);
+                    ProcessInfo info(nextProcessId++, name);
+                    info.coreID = -1;
+                    info.progress = 0;
+                    info.total = p->totalCommands;
+                    info.finished = false;
+                    processList.push_back(info);
+                }
+                std::cout << "Process '" << name << "' created successfully with instructions." << std::endl;
+            } else {
+                delete p;
+            }
+        } catch (const std::exception& e) {
+            std::cout << "Error creating process '" << name << "': " << e.what() << std::endl;
+            printEnter();
+            return false;
+        }
+    }
+    else if (command == "process-smi") {
+        // Show a summary of memory and process usage
+        if (!memoryManager) {
+            std::cout << "Memory manager not initialized!" << std::endl;
+            printEnter();
+            return false;
+        }
+        // Example output format (customize as needed)
+        int totalMem = 0, usedMem = 0;
+        int procCount = 0;
+        auto layout = memoryManager->getMemoryLayout();
+        for (const auto& block : layout) {
+            totalMem += block.size;
+            if (block.isAllocated) usedMem += block.size;
+        }
+        double memUtil = totalMem ? (usedMem * 100.0 / totalMem) : 0.0;
+        std::cout << "| PROCESS-SMI V01.00 Driver Version: 01.00 |" << std::endl;
+        std::cout << "CPU-Util: 100%" << std::endl;
+        std::cout << "Memory Usage: " << usedMem / 1024 << "MiB / " << totalMem / 1024 << "MiB" << std::endl;
+        std::cout << "Memory Util: " << (int)memUtil << "%" << std::endl;
+        std::cout << "\nRunning processes and memory usage:" << std::endl;
+        for (const auto& block : layout) {
+            if (block.isAllocated) {
+                std::cout << block.processName << " " << block.size / 1024 << "MiB" << std::endl;
+                ++procCount;
+            }
+        }
+        if (procCount == 0) std::cout << "(none)" << std::endl;
+        printEnter();
+        return true;
+    }
     else {
         std::cout << "Unknown command." << std::endl;
         printEnter();
