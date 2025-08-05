@@ -191,7 +191,12 @@ bool MemoryManager::accessMemory(const std::string& processName, int virtualAddr
     int pageNumber = virtualAddress / frameSize;
     int offset = virtualAddress % frameSize;
     auto& pageTable = processPageTables[processName];
-    if (pageNumber >= (int)pageTable.size()) return false; // Out of bounds
+    if (pageNumber >= (int)pageTable.size()) {
+        std::cout << "DEBUG: Memory access violation - Address 0x" << std::hex << virtualAddress 
+                  << " (page " << pageNumber << ") out of bounds for process " << processName 
+                  << " (max pages: " << pageTable.size() << ")" << std::endl;
+        return false; // Out of bounds
+    }
     if (!pageTable[pageNumber].valid) {
         pageFaultHandler(processName, pageNumber);
     }

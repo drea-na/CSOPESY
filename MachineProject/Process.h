@@ -44,7 +44,7 @@ public:
     int totalCommands;
     int executedCommands;
     std::ofstream logFile;
-    MemoryManager* memoryManager = nullptr; // Reference to memory manager
+    MemoryManager* memoryManager = nullptr; 
 
     enum class InstrType {
         PRINT,
@@ -53,14 +53,14 @@ public:
         SUBTRACT,
         SLEEP,
         FOR,
-        READ,   // New
-        WRITE   // New
+        READ,   
+        WRITE   
     };
 
     struct Instruction {
         InstrType type;
         std::vector<std::string> args;
-        std::vector<Instruction> body; // For FOR loops only
+        std::vector<Instruction> body; 
         int repeats = 0;
     };
 

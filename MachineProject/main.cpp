@@ -127,12 +127,12 @@ void readConfig() {
         global_mem_per_proc = 4096;
     }
     if (global_min_mem_per_proc < 64 || global_min_mem_per_proc > 65536) {
-        std::cout << "[config.txt] min-mem-per-proc out of range (64-65536). Using default (64)." << std::endl;
-        global_min_mem_per_proc = 64;
+        //std::cout << "[config.txt] min-mem-per-proc out of range (64-65536). Using default (64)." << std::endl;
+        //global_min_mem_per_proc = 64;
     }
     if (global_max_mem_per_proc < global_min_mem_per_proc || global_max_mem_per_proc > 65536) {
-        std::cout << "[config.txt] max-mem-per-proc out of range or less than min-mem-per-proc. Using default (65536)." << std::endl;
-        global_max_mem_per_proc = 65536;
+        //std::cout << "[config.txt] max-mem-per-proc out of range or less than min-mem-per-proc. Using default (65536)." << std::endl;
+        //global_max_mem_per_proc = 65536;
     }
 }
 

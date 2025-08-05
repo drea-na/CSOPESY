@@ -100,41 +100,66 @@ bool CommandHandler::handleCommands(const std::string& command) {
         screenR(name);
     }
     else if (command.substr(0, 10) == "screen -c ") {
-        // Format: screen -c <process_name> <memory_size> "<instructions>"
+        // Format: screen -c <process_name> [memory_size] "<instructions>"
         std::string remaining = command.substr(10);
         size_t firstSpace = remaining.find(' ');
         if (firstSpace == std::string::npos) {
-            std::cout << "Error: Missing process name or memory size." << std::endl;
+            std::cout << "Error: Missing process name." << std::endl;
             printEnter();
             return false;
         }
         std::string name = remaining.substr(0, firstSpace);
         std::string afterName = remaining.substr(firstSpace + 1);
+        
+        // Check if the next token is a number (memory size) or quoted instructions
         size_t secondSpace = afterName.find(' ');
+        std::string memorySizeStr;
+        std::string instructionsStr;
+        
         if (secondSpace == std::string::npos) {
-            std::cout << "Error: Missing memory size or instructions." << std::endl;
-            printEnter();
-            return false;
+            // Only instructions provided: screen -c process "instructions"
+            instructionsStr = afterName;
+        } else {
+            // Check if the first token after name is a number
+            std::string firstToken = afterName.substr(0, secondSpace);
+            bool isNumber = true;
+            for (char c : firstToken) {
+                if (!std::isdigit(c)) {
+                    isNumber = false;
+                    break;
+                }
+            }
+            
+            if (isNumber) {
+                // Format: screen -c process memory_size "instructions"
+                memorySizeStr = firstToken;
+                instructionsStr = afterName.substr(secondSpace + 1);
+            } else {
+                // Format: screen -c process "instructions" (no memory size)
+                instructionsStr = afterName;
+            }
         }
-        std::string memorySizeStr = afterName.substr(0, secondSpace);
-        std::string instructionsStr = afterName.substr(secondSpace + 1);
+        
         // Remove quotes if present
         if (!instructionsStr.empty() && instructionsStr.front() == '"' && instructionsStr.back() == '"') {
             instructionsStr = instructionsStr.substr(1, instructionsStr.size() - 2);
         }
-        int memorySize = -1;
-        try {
-            memorySize = std::stoi(memorySizeStr);
-        } catch (...) {
-            std::cout << "Error: Invalid memory size format. Please provide a valid number." << std::endl;
-            printEnter();
-            return false;
-        }
-        if (!isValidMemorySize(memorySize)) {
-            std::cout << "Error: Invalid memory allocation. Memory size must be between " << global_min_mem_per_proc 
-                      << " and " << global_max_mem_per_proc << " bytes and be a power of 2." << std::endl;
-            printEnter();
-            return false;
+        
+        int memorySize = global_mem_per_proc; // Default memory size
+        if (!memorySizeStr.empty()) {
+            try {
+                memorySize = std::stoi(memorySizeStr);
+            } catch (...) {
+                std::cout << "Error: Invalid memory size format. Please provide a valid number." << std::endl;
+                printEnter();
+                return false;
+            }
+            if (!isValidMemorySize(memorySize)) {
+                std::cout << "Error: Invalid memory allocation. Memory size must be between " << global_min_mem_per_proc 
+                          << " and " << global_max_mem_per_proc << " bytes and be a power of 2." << std::endl;
+                printEnter();
+                return false;
+            }
         }
         // Create process with instructions
         try {
@@ -192,7 +217,7 @@ void CommandHandler::initialize() {
     std::cout << "Scheduler initialized: ";
     std::cout << (global_algo == SchedulingAlgorithm::FCFS ? "FCFS" : "RR");
     std::cout << ", cores: " << global_core_count << ", quantum: " << global_quantum << std::endl;
-    std::cout << "Memory manager: " << global_mem_per_proc << " bytes per process" << std::endl;
+    //std::cout << "Memory manager: " << global_mem_per_proc << " bytes per process" << std::endl;
     initialized = true;
     printEnter();
 }
@@ -697,7 +722,7 @@ void CommandHandler::printHeader() {
     std::cout << Default << "Dionela, Valiant Lance" << Default << std::endl;
     std::cout << Default << "Dy, Fatima Kriselle" << Default << std::endl;
     std::cout << Default << "Loria, Andrea Euceli" << Default << std::endl;
-    std::cout << Default << "\nLast Updated: " << Y << "06-28-2025" << Default << std::endl;
+    std::cout << Default << "\nLast Updated: " << Y << "08-05-2025" << Default << std::endl;
     std::cout << Default << "\n" << std::string(50, '-') << Default << std::endl;
     std::cout << Y << "Type 'exit' to quit, 'clear' to clear the screen" << Default << std::endl;
     std::cout << "root:\\> ";
