@@ -211,6 +211,12 @@ public:
                 for (auto& info : processList) {
                     if (info.name == p->name) {
                         info.finished = true;
+                        // Check if it's a memory access violation
+                        if (p->memoryAccessViolation) {
+                            info.memoryAccessViolation = true;
+                            info.violationAddress = p->violationAddress;
+                            info.violationTime = p->violationTime;
+                        }
                         break;
                     }
                 }

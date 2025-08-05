@@ -30,9 +30,11 @@ public:
     void schedulerStop();
     void screenList();
     void screenS(const std::string& name, int memorySize = -1);
+    void screenC(const std::string& name, int memorySize, const std::string& instructions);
     void screenR(const std::string& name);
     void reportUtil();
     void processSmi(const std::string& processName);
+    void vmstat();
     void printHeader();
     void printEnter();
 };
