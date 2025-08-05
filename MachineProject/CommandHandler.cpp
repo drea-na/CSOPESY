@@ -59,6 +59,9 @@ bool CommandHandler::handleCommands(const std::string& command) {
     else if (command == "scheduler-stop") {
         schedulerStop();
     }
+    else if (command == "vmstat") {
+        vmstat();
+    }
     else if (command == "screen -ls") {
         screenList();
     }
@@ -336,6 +339,9 @@ void CommandHandler::screenR(const std::string& name) {
             inScreen = true;
             processSmi(name);
         }
+        else if (input == "vmstat") {
+            vmstat();
+        }
         else {
             std::cout << "Unknown command in screen '" << name << "'. Type 'exit' to leave the screen." << std::endl;
         }
@@ -404,6 +410,50 @@ void CommandHandler::reportUtil() {
 
     reportFile.close();
     std::cout << "Report generated at: " << filename << "!" << std::endl;
+    printEnter();
+}
+void CommandHandler::vmstat() {
+    if (!memoryManager) {
+        std::cout << "Memory manager not initialized!" << std::endl;
+        printEnter();
+        return;
+    }
+
+    std::cout << "\n=== Memory Statistics (vmstat) ===" << std::endl;
+
+    // Get memory layout information
+    auto layout = memoryManager->getMemoryLayout();
+    int totalMemory = 0;
+    int usedMemory = 0;
+    int freeMemory = 0;
+    int framesUsed = 0;
+    int framesFree = 0;
+
+    for (const auto& block : layout) {
+        totalMemory += block.size;
+        if (block.isAllocated) {
+            usedMemory += block.size;
+            framesUsed += (block.size + memoryManager->getFrameSize() - 1) / memoryManager->getFrameSize();
+        }
+        else {
+            freeMemory += block.size;
+            framesFree += (block.size + memoryManager->getFrameSize() - 1) / memoryManager->getFrameSize();
+        }
+    }
+
+    // Display memory information
+    std::cout << "Total memory: " << totalMemory << " bytes" << std::endl;
+    std::cout << "Used memory: " << usedMemory << " bytes (" << (usedMemory * 100 / totalMemory) << "%)" << std::endl;
+    std::cout << "Free memory: " << freeMemory << " bytes (" << (freeMemory * 100 / totalMemory) << "%)" << std::endl;
+    std::cout << "Frames used: " << framesUsed << std::endl;
+    std::cout << "Frames free: " << framesFree << std::endl;
+
+    // CPU utilization (using existing counters)
+    double utilization = (activeCpuCycles * 100.0) / totalCpuCycles;
+    std::cout << "\nCPU utilization: " << std::fixed << std::setprecision(2) << utilization << "%" << std::endl;
+    std::cout << "Active cycles: " << activeCpuCycles << std::endl;
+    std::cout << "Total cycles: " << totalCpuCycles << std::endl;
+
     printEnter();
 }
 

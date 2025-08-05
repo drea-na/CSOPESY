@@ -33,6 +33,7 @@ public:
     void screenR(const std::string& name);
     void reportUtil();
     void processSmi(const std::string& processName);
+    void vmstat();
     void printHeader();
     void printEnter();
 };

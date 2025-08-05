@@ -42,10 +42,13 @@ public:
     int getNumberOfProcessesInMemory() const;
     int getTotalExternalFragmentation() const;
     std::vector<MemoryBlock> getMemoryLayout() const;
+    // Add to MemoryManager class in MemoryManager.h
+    int getFrameSize() const { return frameSize; }
 
     // File output methods
     void generateMemorySnapshot(int quantumCycle);
     void setCurrentQuantumCycle(int cycle) { currentQuantumCycle = cycle; }
+
 
 private:
     void mergeFreeBlocks();
