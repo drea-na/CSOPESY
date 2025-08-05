@@ -1,38 +1,37 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\",
+  "WorkspaceRootPath": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\CommandHandler.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\CommandHandler.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:CommandHandler.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\CommandHandler.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:CommandHandler.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\include\\utility||{3B902123-F8A7-4915-9F01-361F908088D0}|"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\MemoryManager.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:MemoryManager.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\Scheduler.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\Scheduler.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:Scheduler.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\Process.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:Process.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\CommandHandler.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:CommandHandler.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\Console.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\console.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:console.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\Console.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:Console.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\console.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:console.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\Process.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:Process.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{7297CF9D-4EE0-40E1-9EF7-2EB04473E56D}|MachineProject.vcxproj|solutionrelative:main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     }
   ],
   "DocumentGroupContainers": [
@@ -42,108 +41,101 @@
       "DocumentGroups": [
         {
           "DockedWidth": 232,
-          "SelectedChildIndex": 3,
+          "SelectedChildIndex": 2,
           "Children": [
-            {
-              "$type": "Bookmark",
-              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "MemoryManager.h",
-              "DocumentMoniker": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\MemoryManager.h",
-              "RelativeDocumentMoniker": "MemoryManager.h",
-              "ToolTip": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\MemoryManager.h",
-              "RelativeToolTip": "MemoryManager.h",
-              "ViewState": "AgIAABsAAAAAAAAAAAAAAC0AAAAyAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2025-08-05T05:53:30.81Z",
-              "EditorCaption": ""
-            },
             {
               "$type": "Document",
               "DocumentIndex": 1,
-              "Title": "CommandHandler.h",
-              "DocumentMoniker": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\CommandHandler.h",
-              "RelativeDocumentMoniker": "CommandHandler.h",
-              "ToolTip": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\CommandHandler.h",
-              "RelativeToolTip": "CommandHandler.h",
-              "ViewState": "AgIAAAwAAAAAAAAAAAAAACMAAAASAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2025-06-21T07:37:02.253Z",
+              "Title": "utility",
+              "DocumentMoniker": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\include\\utility",
+              "ToolTip": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\include\\utility",
+              "ViewState": "AgIAAPYCAAAAAAAAAAAYwAQDAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2025-08-04T16:57:44.535Z",
               "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "CommandHandler.h",
+              "DocumentMoniker": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\CommandHandler.h",
+              "RelativeDocumentMoniker": "CommandHandler.h",
+              "ToolTip": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\CommandHandler.h",
+              "RelativeToolTip": "CommandHandler.h",
+              "ViewState": "AgIAAA8AAAAAAAAAAAAAAAwAAAAmAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-06-21T07:37:02.253Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "CommandHandler.cpp",
-              "DocumentMoniker": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\CommandHandler.cpp",
+              "DocumentMoniker": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\CommandHandler.cpp",
               "RelativeDocumentMoniker": "CommandHandler.cpp",
-              "ToolTip": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\CommandHandler.cpp*",
-              "RelativeToolTip": "CommandHandler.cpp*",
-              "ViewState": "AgIAAC0AAAAAAAAAAAAlwD8AAAAFAAAAAAAAAA==",
+              "ToolTip": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\CommandHandler.cpp",
+              "RelativeToolTip": "CommandHandler.cpp",
+              "ViewState": "AgIAAD4AAAAAAAAAAAAAAMsCAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2025-06-27T02:49:40.803Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 4,
               "Title": "Console.h",
-              "DocumentMoniker": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\Console.h",
+              "DocumentMoniker": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\Console.h",
               "RelativeDocumentMoniker": "Console.h",
-              "ToolTip": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\Console.h",
+              "ToolTip": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\Console.h",
               "RelativeToolTip": "Console.h",
-              "ViewState": "AgIAABUAAAAAAAAAAAAAAC8AAAAFAAAAAAAAAA==",
+              "ViewState": "AgIAABgAAAAAAAAAAAAAAC8AAAAFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
               "WhenOpened": "2025-05-26T12:19:09.188Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 5,
               "Title": "Console.cpp",
-              "DocumentMoniker": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\Console.cpp",
+              "DocumentMoniker": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\Console.cpp",
               "RelativeDocumentMoniker": "Console.cpp",
-              "ToolTip": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\Console.cpp",
+              "ToolTip": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\Console.cpp",
               "RelativeToolTip": "Console.cpp",
-              "ViewState": "AgIAAAYAAAAAAAAAAAAAACEAAAAiAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACEAAAAiAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2025-06-21T10:47:22.688Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 6,
               "Title": "Process.h",
-              "DocumentMoniker": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\Process.h",
+              "DocumentMoniker": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\Process.h",
               "RelativeDocumentMoniker": "Process.h",
-              "ToolTip": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\Process.h",
+              "ToolTip": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\Process.h",
               "RelativeToolTip": "Process.h",
-              "ViewState": "AgIAAMYAAAAAAAAAAAAAANgAAAAzAAAAAAAAAA==",
+              "ViewState": "AgIAAEMBAAAAAAAAAAAAANgAAAAzAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
               "WhenOpened": "2025-06-14T06:59:21.78Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 2,
               "Title": "Scheduler.h",
-              "DocumentMoniker": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\Scheduler.h",
+              "DocumentMoniker": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\Scheduler.h",
               "RelativeDocumentMoniker": "Scheduler.h",
-              "ToolTip": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\Scheduler.h",
+              "ToolTip": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\Scheduler.h",
               "RelativeToolTip": "Scheduler.h",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAACgAAABKAAAAAAAAAA==",
+              "ViewState": "AgIAAEgAAAAAAAAAAAAYwFYAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
               "WhenOpened": "2025-06-14T06:59:47.674Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 7,
               "Title": "main.cpp",
-              "DocumentMoniker": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\main.cpp",
+              "DocumentMoniker": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\main.cpp",
               "RelativeDocumentMoniker": "main.cpp",
-              "ToolTip": "C:\\Users\\kendr\\source\\repos\\CSOPESY\\MachineProject\\main.cpp",
+              "ToolTip": "D:\\DLSU\\CSOPESY\\CSOPESY\\MachineProject\\main.cpp",
               "RelativeToolTip": "main.cpp",
-              "ViewState": "AgIAALEAAAAAAAAAAAAAAIMAAAAEAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAIMAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2025-05-16T15:25:35.335Z"
             }

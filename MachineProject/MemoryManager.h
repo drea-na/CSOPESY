@@ -11,6 +11,7 @@
 #include <mutex>
 #include <map>
 #include <queue>
+#include <atomic>
 
 struct MemoryBlock {
     int startAddress;
@@ -24,39 +25,14 @@ struct MemoryBlock {
 };
 
 class MemoryManager {
-private:
-    std::vector<MemoryBlock> memoryBlocks;
-    int totalMemory;
-    int frameSize;
-    int maxMemoryPerProcess;
-    mutable std::mutex memoryMutex;
-    int currentQuantumCycle;
-
-    // Demand paging structures
-    struct FrameEntry {
-        int frameNumber;
-        std::string processName;
-        int pageNumber;
-        bool isFree;
-        FrameEntry(int num) : frameNumber(num), processName(""), pageNumber(-1), isFree(true) {}
-    };
-    std::vector<FrameEntry> frameTable; // All physical frames
-
+public:
     struct PageTableEntry {
         bool valid; // in memory?
         int frameNumber; // if valid
         int backingStoreOffset; // if swapped out
         PageTableEntry() : valid(false), frameNumber(-1), backingStoreOffset(-1) {}
     };
-    std::map<std::string, std::vector<PageTableEntry>> processPageTables; // processName -> page table
 
-    std::queue<std::pair<std::string, int>> loadedPages; // FIFO: (processName, pageNumber)
-
-    std::fstream backingStoreFile; // csopesy-backing-store.txt
-    std::string backingStoreFileName = "csopesy-backing-store.txt";
-    int nextBackingStoreOffset = 0;
-
-public:
     MemoryManager(int totalMem = 16384, int frameSz = 16, int maxMemPerProc = 4096);
 
     // Memory allocation methods
@@ -82,7 +58,43 @@ public:
     void loadPageFromBackingStore(const std::string& processName, int pageNumber);
     void writePageToBackingStore(const std::string& processName, int pageNumber);
     void removeProcessPages(const std::string& processName);
+    
+    // Page fault statistics getters
+    int getPagesPagedIn() const { return pagesPagedIn.load(); }
+    int getPagesPagedOut() const { return pagesPagedOut.load(); }
 
+    // Public access to process page tables
+    std::map<std::string, std::vector<PageTableEntry>>& getProcessPageTables() { return processPageTables; }
+
+private:
+    std::vector<MemoryBlock> memoryBlocks;
+    int totalMemory;
+    int frameSize;
+    int maxMemoryPerProcess;
+    mutable std::mutex memoryMutex;
+    int currentQuantumCycle;
+
+    // Demand paging structures
+    struct FrameEntry {
+        int frameNumber;
+        std::string processName;
+        int pageNumber;
+        bool isFree;
+        FrameEntry(int num) : frameNumber(num), processName(""), pageNumber(-1), isFree(true) {}
+    };
+    std::vector<FrameEntry> frameTable; // All physical frames
+
+    std::map<std::string, std::vector<PageTableEntry>> processPageTables; // processName -> page table
+
+    std::queue<std::pair<std::string, int>> loadedPages; // FIFO: (processName, pageNumber)
+
+    std::fstream backingStoreFile; // csopesy-backing-store.txt
+    std::string backingStoreFileName = "csopesy-backing-store.txt";
+    int nextBackingStoreOffset = 0;
+    
+    // Page fault statistics
+    std::atomic<int> pagesPagedIn{0};
+    std::atomic<int> pagesPagedOut{0};
 
 private:
     void mergeFreeBlocks();

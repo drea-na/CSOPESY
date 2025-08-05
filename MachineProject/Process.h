@@ -95,50 +95,96 @@ public:
     }
 
     // Main execution method - returns true if process should continue
-    bool executeNextInstruction(int coreId);
+    inline bool executeNextInstruction(int coreId);
 
     // Generate random instructions for the process
-    void generateRandomInstructions(int minIns, int maxIns);
+    inline void generateRandomInstructions(int minIns, int maxIns);
 
     // Check if process is complete
-    bool isComplete() const {
+    inline bool isComplete() const {
         return currentInstr >= instructions.size() && sleepTicks == 0;
     }
 
     // Get progress percentage
-    double getProgress() const {
+    inline double getProgress() const {
         if (instructions.empty()) return 0.0;
         return (double)executedCommands / instructions.size() * 100.0;
     }
 
     // New: symbol table helpers
-    int getSymbolIndex(const std::string& var) {
+    inline int getSymbolIndex(const std::string& var) {
         if (symbolIndex.count(var)) return symbolIndex[var];
         if (symbolCount >= 32) throw std::runtime_error("Symbol table full");
         symbolIndex[var] = symbolCount;
         return symbolCount++;
     }
-    void setSymbol(const std::string& var, uint16_t value) {
+    inline void setSymbol(const std::string& var, uint16_t value) {
         int idx = getSymbolIndex(var);
         symbolTable[idx] = value;
     }
-    uint16_t getSymbol(const std::string& var) {
+    inline uint16_t getSymbol(const std::string& var) {
         int idx = getSymbolIndex(var);
         return symbolTable[idx];
     }
 
     // Parse user instructions from a semicolon-separated string
-    void parseUserInstructions(const std::string& instrStr) {
+    inline void parseUserInstructions(const std::string& instrStr) {
         instructions.clear();
-        size_t start = 0, end = 0;
-        while ((end = instrStr.find(';', start)) != std::string::npos) {
-            std::string instr = instrStr.substr(start, end - start);
-            parseSingleInstruction(instr);
-            start = end + 1;
+        
+        // Handle semicolon separation while respecting quoted strings
+        std::string currentInstruction;
+        bool inQuotes = false;
+        bool escaped = false;
+        int count = 0;
+        
+        for (size_t i = 0; i < instrStr.length() && count < 50; ++i) {
+            char c = instrStr[i];
+            
+            if (escaped) {
+                currentInstruction += c;
+                escaped = false;
+                continue;
+            }
+            
+            if (c == '\\') {
+                escaped = true;
+                currentInstruction += c;
+                continue;
+            }
+            
+            if (c == '"') {
+                inQuotes = !inQuotes;
+                currentInstruction += c;
+                continue;
+            }
+            
+            if (c == ';' && !inQuotes) {
+                // End of instruction
+                if (!currentInstruction.empty()) {
+                    // Trim whitespace
+                    currentInstruction.erase(0, currentInstruction.find_first_not_of(" \t"));
+                    currentInstruction.erase(currentInstruction.find_last_not_of(" \t") + 1);
+                    if (!currentInstruction.empty()) {
+                        parseSingleInstruction(currentInstruction);
+                        count++;
+                    }
+                }
+                currentInstruction.clear();
+            } else {
+                currentInstruction += c;
+            }
         }
-        if (start < instrStr.size()) {
-            parseSingleInstruction(instrStr.substr(start));
+        
+        // Add the last instruction if there is one
+        if (!currentInstruction.empty() && count < 50) {
+            currentInstruction.erase(0, currentInstruction.find_first_not_of(" \t"));
+            currentInstruction.erase(currentInstruction.find_last_not_of(" \t") + 1);
+            if (!currentInstruction.empty()) {
+                parseSingleInstruction(currentInstruction);
+                count++;
+            }
         }
+        
         totalCommands = instructions.size();
         executedCommands = 0;
         currentInstr = 0;
@@ -147,8 +193,8 @@ public:
     }
 
 private:
-    void setVariable(const std::string& var, int value);
-    void logMessage(const std::string& message, int coreId);
+    inline void setVariable(const std::string& var, int value);
+    inline void logMessage(const std::string& message, int coreId);
     void parseSingleInstruction(const std::string& instr);
 };
 
@@ -198,10 +244,39 @@ inline bool Process::executeNextInstruction(int coreId) {
         const Instruction& instr = instructions[currentInstr];
         switch (instr.type) {
         case InstrType::PRINT: {
-            std::string msg = "Hello world from " + name + "!";
-            if (!instr.args.empty() && symbolIndex.count(instr.args[0])) {
-                msg += " " + instr.args[0] + "=" + std::to_string(getSymbol(instr.args[0]));
+            std::string msg = instr.args.empty() ? "Hello world from " + name + "!" : instr.args[0];
+            
+            // Handle string concatenation with + operator
+            size_t pos = 0;
+            while ((pos = msg.find(" + ", pos)) != std::string::npos) {
+                size_t start = pos;
+                size_t end = msg.find(" + ", pos + 3);
+                if (end == std::string::npos) end = msg.length();
+                
+                std::string left = msg.substr(0, start);
+                std::string right = msg.substr(end);
+                std::string middle = msg.substr(start + 3, end - start - 3);
+                
+                // Check if middle is a variable name
+                if (symbolIndex.count(middle)) {
+                    middle = std::to_string(getSymbol(middle));
+                }
+                
+                msg = left + middle + right;
+                pos = left.length() + middle.length();
             }
+            
+            // Simple variable substitution - replace variable names with their values
+            for (const auto& var : symbolIndex) {
+                std::string varPattern = var.first;
+                std::string varValue = std::to_string(symbolTable[var.second]);
+                size_t pos = 0;
+                while ((pos = msg.find(varPattern, pos)) != std::string::npos) {
+                    msg.replace(pos, varPattern.length(), varValue);
+                    pos += varValue.length();
+                }
+            }
+            
             logMessage(msg, coreId);
             break;
         }
@@ -250,11 +325,23 @@ inline bool Process::executeNextInstruction(int coreId) {
                 uint16_t value = 0;
                 bool ok = memoryManager->accessMemory(name, address, false, &value);
                 if (!ok) {
-                    logMessage("Memory access violation at address " + instr.args[1], coreId);
+                    // Enhanced error message with timestamp
+                    auto now = std::chrono::system_clock::now();
+                    auto time = std::chrono::system_clock::to_time_t(now);
+                    std::tm tm_time;
+                    localtime_s(&tm_time, &time);
+                    std::stringstream ss;
+                    ss << std::put_time(&tm_time, "%H:%M:%S");
+                    std::string timestamp = ss.str();
+                    
+                    std::string errorMsg = "Process " + name + " shut down due to memory access violation error that occurred at " + 
+                                         timestamp + ". " + instr.args[1] + " invalid.";
+                    logMessage(errorMsg, coreId);
                     isFinished = true;
                     return false;
                 }
                 setSymbol(var, value);
+                logMessage("READ " + std::to_string(value) + " from 0x" + instr.args[1] + " into " + var, coreId);
             }
             break;
         }
@@ -270,10 +357,22 @@ inline bool Process::executeNextInstruction(int coreId) {
                 }
                 bool ok = memoryManager->accessMemory(name, address, true, &value);
                 if (!ok) {
-                    logMessage("Memory access violation at address " + instr.args[0], coreId);
+                    // Enhanced error message with timestamp
+                    auto now = std::chrono::system_clock::now();
+                    auto time = std::chrono::system_clock::to_time_t(now);
+                    std::tm tm_time;
+                    localtime_s(&tm_time, &time);
+                    std::stringstream ss;
+                    ss << std::put_time(&tm_time, "%H:%M:%S");
+                    std::string timestamp = ss.str();
+                    
+                    std::string errorMsg = "Process " + name + " shut down due to memory access violation error that occurred at " + 
+                                         timestamp + ". " + instr.args[0] + " invalid.";
+                    logMessage(errorMsg, coreId);
                     isFinished = true;
                     return false;
                 }
+                logMessage("WRITE " + std::to_string(value) + " to 0x" + instr.args[0], coreId);
             }
             break;
         }

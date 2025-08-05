@@ -6,6 +6,8 @@
 #include <mutex>
 #include <vector>
 #include <queue>
+#include <iomanip>
+#include <sstream>
 #include <algorithm>
 #include <condition_variable>
 
@@ -32,12 +34,15 @@ extern std::atomic<int> totalCpuCycles;
 extern std::atomic<int> activeCpuCycles;
 extern MemoryManager* memoryManager;
 extern int global_mem_per_proc;
+extern int global_min_mem_per_proc;
+extern int global_max_mem_per_proc;
 
 //external declarations
 extern void readConfig();
 extern void generateDummyProcess(const std::string& name);
 extern void generateDummyProcessWithMemory(const std::string& name, int memorySize);
 extern void showProcessList();
+extern int nextProcessId;
 
 bool CommandHandler::handleCommands(const std::string& command) {
     // Only allow 'initialize' and 'exit' before initialization
@@ -126,7 +131,8 @@ bool CommandHandler::handleCommands(const std::string& command) {
             return false;
         }
         if (!isValidMemorySize(memorySize)) {
-            std::cout << "Error: Invalid memory allocation. Memory size must be between 64 and 65536 bytes and be a power of 2." << std::endl;
+            std::cout << "Error: Invalid memory allocation. Memory size must be between " << global_min_mem_per_proc 
+                      << " and " << global_max_mem_per_proc << " bytes and be a power of 2." << std::endl;
             printEnter();
             return false;
         }
@@ -138,7 +144,7 @@ bool CommandHandler::handleCommands(const std::string& command) {
             // Initialize page table for this process
             if (memoryManager) {
                 int numPages = (memorySize + memoryManager->getFrameSize() - 1) / memoryManager->getFrameSize();
-                memoryManager->processPageTables[name] = std::vector<MemoryManager::PageTableEntry>(numPages);
+                memoryManager->getProcessPageTables()[name] = std::vector<MemoryManager::PageTableEntry>(numPages);
             }
             if (scheduler) {
                 scheduler->addProcessWithMemory(p, memorySize);
@@ -151,9 +157,10 @@ bool CommandHandler::handleCommands(const std::string& command) {
                     info.finished = false;
                     processList.push_back(info);
                 }
-                std::cout << "Process '" << name << "' created successfully with instructions." << std::endl;
+                std::cout << "Process '" << name << "' created successfully with " << memorySize << " bytes memory and " << p->totalCommands << " custom instructions." << std::endl;
             } else {
                 delete p;
+                std::cout << "Error: Scheduler not initialized." << std::endl;
             }
         } catch (const std::exception& e) {
             std::cout << "Error creating process '" << name << "': " << e.what() << std::endl;
@@ -162,34 +169,7 @@ bool CommandHandler::handleCommands(const std::string& command) {
         }
     }
     else if (command == "process-smi") {
-        // Show a summary of memory and process usage
-        if (!memoryManager) {
-            std::cout << "Memory manager not initialized!" << std::endl;
-            printEnter();
-            return false;
-        }
-        // Example output format (customize as needed)
-        int totalMem = 0, usedMem = 0;
-        int procCount = 0;
-        auto layout = memoryManager->getMemoryLayout();
-        for (const auto& block : layout) {
-            totalMem += block.size;
-            if (block.isAllocated) usedMem += block.size;
-        }
-        double memUtil = totalMem ? (usedMem * 100.0 / totalMem) : 0.0;
-        std::cout << "| PROCESS-SMI V01.00 Driver Version: 01.00 |" << std::endl;
-        std::cout << "CPU-Util: 100%" << std::endl;
-        std::cout << "Memory Usage: " << usedMem / 1024 << "MiB / " << totalMem / 1024 << "MiB" << std::endl;
-        std::cout << "Memory Util: " << (int)memUtil << "%" << std::endl;
-        std::cout << "\nRunning processes and memory usage:" << std::endl;
-        for (const auto& block : layout) {
-            if (block.isAllocated) {
-                std::cout << block.processName << " " << block.size / 1024 << "MiB" << std::endl;
-                ++procCount;
-            }
-        }
-        if (procCount == 0) std::cout << "(none)" << std::endl;
-        printEnter();
+        processSmi("");
         return true;
     }
     else {
@@ -302,7 +282,8 @@ void CommandHandler::screenS(const std::string& name, int memorySize) {
     // Validate memory size if provided
     if (memorySize != -1) {
         if (!isValidMemorySize(memorySize)) {
-            std::cout << "Error: Invalid memory allocation. Memory size must be between 64 and 65536 bytes and be a power of 2." << std::endl;
+            std::cout << "Error: Invalid memory allocation. Memory size must be between " << global_min_mem_per_proc 
+                      << " and " << global_max_mem_per_proc << " bytes and be a power of 2." << std::endl;
             printEnter();
             return;
         }
@@ -440,6 +421,23 @@ void CommandHandler::screenR(const std::string& name) {
         else if (input == "vmstat") {
             vmstat();
         }
+        else if (input == "logs") {
+            // Show all logs including memory access violations
+            std::ifstream logFile("process_logs/" + name + ".txt");
+            if (logFile) {
+                std::vector<std::string> lines;
+                std::string line;
+                while (std::getline(logFile, line)) {
+                    lines.push_back(line);
+                }
+                std::cout << "--- All logs for process " << name << " ---" << std::endl;
+                for (const auto& logLine : lines) {
+                    std::cout << logLine << std::endl;
+                }
+            } else {
+                std::cout << "No logs found for process " << name << std::endl;
+            }
+        }
         else {
             std::cout << "Unknown command in screen '" << name << "'. Type 'exit' to leave the screen." << std::endl;
         }
@@ -540,55 +538,148 @@ void CommandHandler::vmstat() {
     }
 
     // Display memory information
-    std::cout << "Total memory: " << totalMemory << " bytes" << std::endl;
-    std::cout << "Used memory: " << usedMemory << " bytes (" << (usedMemory * 100 / totalMemory) << "%)" << std::endl;
-    std::cout << "Free memory: " << freeMemory << " bytes (" << (freeMemory * 100 / totalMemory) << "%)" << std::endl;
-    std::cout << "Frames used: " << framesUsed << std::endl;
-    std::cout << "Frames free: " << framesFree << std::endl;
+    std::cout << "Memory Statistics:" << std::endl;
+    std::cout << "  Total Memory: " << totalMemory << " KB" << std::endl;
+    std::cout << "  Used Memory: " << usedMemory << " KB" << std::endl;
+    std::cout << "  Free Memory: " << freeMemory << " KB" << std::endl;
 
-    // CPU utilization (using existing counters)
-    double utilization = (activeCpuCycles * 100.0) / totalCpuCycles;
-    std::cout << "\nCPU utilization: " << std::fixed << std::setprecision(2) << utilization << "%" << std::endl;
-    std::cout << "Active cycles: " << activeCpuCycles << std::endl;
-    std::cout << "Total cycles: " << totalCpuCycles << std::endl;
+    // Page statistics
+    int totalFrames = framesUsed + framesFree;
+    std::cout << "\nPage Statistics:" << std::endl;
+    std::cout << "  Total Frames: " << totalFrames << std::endl;
+    std::cout << "  Free Frames: " << framesFree << std::endl;
+    std::cout << "  Used Frames: " << framesUsed << std::endl;
+    std::cout << "  Pages Paged In: " << memoryManager->getPagesPagedIn() << std::endl;
+    std::cout << "  Pages Paged Out: " << memoryManager->getPagesPagedOut() << std::endl;
+
+    // Process statistics
+    int activeProcesses = 0;
+    int totalProcesses = 0;
+    int totalPages = 0;
+    
+    {
+        std::lock_guard<std::mutex> lock(processMutex);
+        for (const auto& process : processList) {
+            totalProcesses++;
+            if (!process.finished) {
+                activeProcesses++;
+            }
+            totalPages++; // Each process gets 1 page for now
+        }
+    }
+
+    std::cout << "\nProcess Statistics:" << std::endl;
+    std::cout << "  Active Processes: " << activeProcesses << std::endl;
+    std::cout << "  Total Processes: " << totalProcesses << std::endl;
+    std::cout << "  Total Pages: " << totalPages << std::endl;
+
+    // CPU statistics
+    int idleCycles = totalCpuCycles - activeCpuCycles;
+    std::cout << "\nCPU Statistics:" << std::endl;
+    std::cout << "  Idle CPU Ticks: " << idleCycles << std::endl;
+    std::cout << "  Active CPU Ticks: " << activeCpuCycles << std::endl;
+    std::cout << "  Total CPU Ticks: " << totalCpuCycles << std::endl;
+    double utilization = totalCpuCycles > 0 ? (activeCpuCycles * 100.0) / totalCpuCycles : 0.0;
+    std::cout << "  CPU Utilization: " << std::fixed << std::setprecision(2) << utilization << "%" << std::endl;
 
     printEnter();
 }
 
 void CommandHandler::processSmi(const std::string& processName) {
-    // Find the process in the process list
-    auto it = std::find_if(processList.begin(), processList.end(),
-        [&](const ProcessInfo& p) { return p.name == processName; });
-
-    if (it != processList.end()) {
-        std::cout << "\nProcess name: " << it->name << std::endl;
-        std::cout << "ID: " << it->id << std::endl;
-        std::cout << "Logs:" << std::endl;
-
-        // Read and display the last log entry
-        std::ifstream logFile("process_logs/" + it->name + ".txt");
-        if (logFile) {
-            std::vector<std::string> lines;
-            std::string line;
-            while (std::getline(logFile, line)) {
-                lines.push_back(line);
+    if (processName.empty()) {
+        // Global memory summary
+        if (memoryManager) {
+            std::cout << "\n=== CSOPESY Memory Summary (process-smi) ===" << std::endl;
+            
+            // Get memory layout information
+            auto layout = memoryManager->getMemoryLayout();
+            int totalMemory = 0;
+            int usedMemory = 0;
+            int freeMemory = 0;
+            
+            for (const auto& block : layout) {
+                totalMemory += block.size;
+                if (block.isAllocated) {
+                    usedMemory += block.size;
+                } else {
+                    freeMemory += block.size;
+                }
             }
-            if (!lines.empty()) {
-                // Display the last log entry
-                std::cout << lines.back() << std::endl;
+            
+            // Display memory information
+            std::cout << "Total Memory: " << totalMemory << " KB" << std::endl;
+            std::cout << "Used Memory: " << usedMemory << " KB" << std::endl;
+            std::cout << "Free Memory: " << freeMemory << " KB" << std::endl;
+            std::cout << "Memory Utilization: " << std::fixed << std::setprecision(2) 
+                      << (usedMemory * 100.0 / totalMemory) << "%" << std::endl;
+            
+            // Display process list
+            std::cout << "\nProcess List:" << std::endl;
+            std::cout << "   Process Name    Memory     Pages    Status" << std::endl;
+            std::cout << "--------------------------------------------------" << std::endl;
+            
+            {
+                std::lock_guard<std::mutex> lock(processMutex);
+                for (const auto& process : processList) {
+                    // Calculate memory usage (simplified - each process gets 1 page for now)
+                    int memoryUsage = memoryManager->getFrameSize();
+                    int pages = 1;
+                    std::string status = process.finished ? "Inactive" : "Active";
+                    
+                    std::cout << std::setw(15) << process.name 
+                              << std::setw(10) << memoryUsage << " KB"
+                              << std::setw(10) << pages << "/1"
+                              << std::setw(10) << status << std::endl;
+                }
+            }
+        } else {
+            std::cout << "Memory manager not initialized." << std::endl;
+        }
+    } else {
+        // Process-specific information
+        auto it = std::find_if(processList.begin(), processList.end(),
+            [&](const ProcessInfo& p) { return p.name == processName; });
+
+        if (it != processList.end()) {
+            std::cout << "\nProcess name: " << it->name << std::endl;
+            std::cout << "ID: " << it->id << std::endl;
+            std::cout << "Logs:" << std::endl;
+
+            // Read and display the last log entry
+            std::ifstream logFile("process_logs/" + it->name + ".txt");
+            if (logFile) {
+                std::vector<std::string> lines;
+                std::string line;
+                while (std::getline(logFile, line)) {
+                    lines.push_back(line);
+                }
+                if (!lines.empty()) {
+                    // Display the last log entry
+                    std::cout << lines.back() << std::endl;
+                    
+                    // Check for memory access violations
+                    for (const auto& logLine : lines) {
+                        if (logLine.find("memory access violation") != std::string::npos || 
+                            logLine.find("Memory access violation") != std::string::npos) {
+                            std::cout << "*** MEMORY ACCESS VIOLATION DETECTED ***" << std::endl;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            std::cout << "Current instruction line: " << it->progress << std::endl;
+            std::cout << "Lines of code: " << it->total << std::endl;
+
+            if (it->finished) {
+                std::cout << "Finished!" << std::endl;
             }
         }
-
-        std::cout << "Current instruction line: " << it->progress << std::endl;
-        std::cout << "Lines of code: " << it->total << std::endl;
-
-        if (it->finished) {
-            std::cout << "Finished!" << std::endl;
+        else {
+            std::cout << "Process not found in process list." << std::endl;
         }
     }
-    else {
-        std::cout << "Process not found in process list." << std::endl;
-    }
+    printEnter();
 }
 
 void CommandHandler::printHeader() {
@@ -617,7 +708,7 @@ bool CommandHandler::isPowerOfTwo(int n) const {
 }
 
 bool CommandHandler::isValidMemorySize(int size) const {
-    return size >= 64 && size <= 65536 && isPowerOfTwo(size);
+    return size >= global_min_mem_per_proc && size <= global_max_mem_per_proc && isPowerOfTwo(size);
 }
 
 void CommandHandler::printEnter() {

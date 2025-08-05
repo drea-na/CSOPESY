@@ -244,6 +244,10 @@ void MemoryManager::pageFaultHandler(const std::string& processName, int pageNum
     processPageTables[processName][pageNumber].valid = true;
     processPageTables[processName][pageNumber].frameNumber = freeFrame;
     loadedPages.push({processName, pageNumber});
+    
+    // Increment pages paged in counter
+    pagesPagedIn++;
+    
     // If page was in backing store, load it
     if (processPageTables[processName][pageNumber].backingStoreOffset != -1) {
         loadPageFromBackingStore(processName, pageNumber);
@@ -259,6 +263,10 @@ void MemoryManager::swapOutPage() {
     int frameNum = processPageTables[proc][pageNum].frameNumber;
     // Write to backing store
     writePageToBackingStore(proc, pageNum);
+    
+    // Increment pages paged out counter
+    pagesPagedOut++;
+    
     // Mark frame as free
     frameTable[frameNum].isFree = true;
     frameTable[frameNum].processName = "";
